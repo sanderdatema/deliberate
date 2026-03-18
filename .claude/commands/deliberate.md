@@ -16,6 +16,28 @@ Parse $ARGUMENTS for a `--preset` flag:
 - If `--preset balanced` is present or no flag: use the "balanced" preset
 - Everything remaining after stripping the flag is the **question**
 
+## Step 0: Intake — Beoordeel de casus en vraag door
+
+**BEFORE doing anything else**, assess whether the user's question is clear and complete enough to deliberate on. A good casus needs:
+
+1. **Helder vraagstuk:** Is duidelijk wat er beantwoord of onderzocht moet worden?
+2. **Voldoende context:** Zijn de relevante omstandigheden, betrokkenen, en beperkingen beschreven?
+3. **Geen cruciale gaten:** Zijn er voor de hand liggende vragen waarvan het antwoord de analyse fundamenteel zou veranderen?
+
+**If the casus is unclear or incomplete:**
+
+Use the AskUserQuestion tool to ask ONE clarifying question at a time. Focus on the most critical gap first. Examples of good intake questions:
+- "Wat is het concrete resultaat dat je wilt bereiken met dit gesprek?"
+- "Wie zijn de belangrijkste betrokkenen, en wat is hun onderlinge relatie?"
+- "Is er al iets geprobeerd, en zo ja, wat was het effect?"
+- "Wat is je tijdshorizon — heb je morgen een antwoord nodig of is dit een langetermijnvraag?"
+
+Ask a maximum of 12 questions total (one at a time, wait for each answer). After each answer, reassess: is the casus now clear enough? Most cases will need 2-5 questions; complex cases may need more.
+
+**If the casus is clear enough:** Proceed to Step 1. Display: `Casus helder. Deliberatie wordt gestart.`
+
+**IMPORTANT:** Do NOT fill in missing context with assumptions. If you don't know something, ASK. The whole point of the intake is to prevent the analysts from making up context that may be wrong.
+
 ## Step 1: Load Configuration & Personas
 
 1. Read `config.yaml` from the project root. It defines presets with analyst/editor lists and round counts.
@@ -27,7 +49,7 @@ Parse $ARGUMENTS for a `--preset` flag:
 
 3. Read only the YAML files listed in the preset from `personas/` directory.
 
-4. **Custom persona support:** After loading preset personas, check if any additional .yaml files exist in `personas/` that are NOT in the standard 13 (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, marx, hegel, arendt) and NOT schema.yaml. If found, validate they have the required fields (name, role, system_prompt, forbidden) and add them as extra analysts or editors based on their role. Display: `Custom persona geladen: {name}`
+4. **Custom persona support:** After loading preset personas, check if any additional .yaml files exist in `personas/` that are NOT in the standard 14 (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, marx, hegel, arendt, samenvatter) and NOT schema.yaml. If found, validate they have the required fields (name, role, system_prompt, forbidden) and add them as extra analysts or editors based on their role. Display: `Custom persona geladen: {name}`
 
 5. Display the configuration:
 ```
@@ -189,7 +211,39 @@ Uncover the mechanisms. WHY were these specific blind spots produced? What about
 Respond in the same language as the question.
 ```
 
-## Step 6: Format Final Report
+## Step 6: Samenvatter — Maak het concreet
+
+After all editors are done, spawn ONE final agent: the Samenvatter. This agent reads the ENTIRE deliberation (all rounds + all editors + your meta-analysis) and distills it into a concrete, everyday-language summary that the user can directly act on.
+
+Load the samenvatter persona from `personas/samenvatter.yaml` and spawn with Agent tool (`model: "opus"`):
+
+```
+{samenvatter system_prompt}
+
+---
+
+ORIGINAL QUESTION:
+{$ARGUMENTS}
+
+FULL DELIBERATION OUTPUT:
+{everything: all analyst rounds, all editor analyses}
+
+---
+
+Distill this entire deliberation into concrete, actionable advice. Write as if you're talking to a friend over coffee. No jargon, no academic language. What should this person actually DO?
+Respond in the same language as the question.
+```
+
+Display the samenvatter output as:
+```markdown
+---
+
+## Kort & Concreet
+
+{samenvatter output}
+```
+
+## Step 7: Format Full Report (collapsible)
 
 Present the complete deliberation as a structured markdown report:
 

@@ -26,6 +26,8 @@ uv run pytest
 | balanced | 5 (Socrates, Occam, Da Vinci, Holmes, Lupin) | 3 (Marx, Hegel, Arendt) | 2 | ~5 min |
 | deep | 10 (all) | 3 (all) | 2 | ~10 min |
 
+All presets include De Samenvatter as final editor for concrete, actionable output.
+
 ## Custom Personas
 
 Add a YAML file to `personas/` following the schema. It will be auto-loaded alongside the preset.
@@ -51,6 +53,7 @@ personas/               # Thinker definitions (YAML)
   marx.yaml             # Editors (3)
   hegel.yaml
   arendt.yaml
+  samenvatter.yaml      # Samenvatter — concrete vertaler (always last)
 tests/                  # Pytest validation suite
   test_personas.py      # Persona format validation (159 tests)
   test_config.py        # Config and preset validation
@@ -61,10 +64,12 @@ tests/                  # Pytest validation suite
 ## Architecture
 
 1. `/deliberate` parses `--preset` flag and loads `config.yaml`
-2. Ronde 1: preset analysts spawn **in parallel** (all Opus)
-3. Ronde 2: analysts react to each other's Round 1 output (skipped in quick)
-4. Editorial round: editors run **sequentially** with accumulated context
-5. Meta-analysis: consensus, dissensie, verschuiving, gewogen conclusie
+2. **Step 0 — Intake:** Beoordeelt of de casus helder genoeg is. Vraagt door via AskUserQuestion (max 12 vragen) tot de context compleet is. Pas daarna start de deliberatie.
+3. Ronde 1: preset analysts spawn **in parallel** (all Opus)
+4. Ronde 2: analysts react to each other's Round 1 output (skipped in quick)
+5. Editorial round: editors run **sequentially** with accumulated context
+6. **De Samenvatter:** Vertaalt het hele rapport naar concrete, alledaagse taal
+7. Meta-analysis: consensus, dissensie, verschuiving, gewogen conclusie
 
 ## Testing
 

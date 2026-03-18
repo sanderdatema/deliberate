@@ -7,14 +7,14 @@ presets:
     description: "Snelle analyse — 3 analisten + 1 editor, 1 ronde"
     rounds: 1
     analysts: [occam, holmes, lupin]
-    editors: [marx]
+    editors: [marx, samenvatter]
   balanced:
     description: "Standaard deliberatie — 5 analisten + 3 editors, 2 rondes"
     rounds: 2
     analysts: [socrates, occam, da-vinci, holmes, lupin]
-    editors: [marx, hegel, arendt]
+    editors: [marx, hegel, arendt, samenvatter]
   deep:
     description: "Diepgaande analyse — alle 10 analisten + 3 editors, 2 rondes"
     rounds: 2
     analysts: [socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether]
-    editors: [marx, hegel, arendt]
+    editors: [marx, hegel, arendt, samenvatter]

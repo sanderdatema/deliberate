@@ -60,16 +60,16 @@ class TestSchemaExists:
 
 
 class TestPersonaCount:
-    def test_thirteen_personas_exist(self):
-        assert len(PERSONAS) == 13, f"Expected 13 personas, found {len(PERSONAS)}"
+    def test_fourteen_personas_exist(self):
+        assert len(PERSONAS) == 14, f"Expected 14 personas, found {len(PERSONAS)}"
 
     def test_ten_analysts(self):
         analysts = [p for p in PERSONAS if p.get("role") == "analyst"]
         assert len(analysts) == 10, f"Expected 10 analysts, found {len(analysts)}"
 
-    def test_three_editors(self):
+    def test_four_editors(self):
         editors = [p for p in PERSONAS if p.get("role") == "editor"]
-        assert len(editors) == 3, f"Expected 3 editors, found {len(editors)}"
+        assert len(editors) == 4, f"Expected 4 editors, found {len(editors)}"
 
     def test_unique_names(self):
         names = [p["name"] for p in PERSONAS]
@@ -149,11 +149,16 @@ class TestPersonaFormat:
             assert "**Position:**" in sp, f"{persona['_file']}: analyst format must have Position"
             assert "**Evidence:**" in sp, f"{persona['_file']}: analyst format must have Evidence"
 
-    def test_editor_format_has_blind_spots(self, persona):
+    def test_editor_format_has_required_sections(self, persona):
         if persona["role"] != "editor":
             pytest.skip("Analyst persona")
         sp = persona.get("system_prompt", "")
-        assert "**Blind Spots:**" in sp, f"{persona['_file']}: editor format must have Blind Spots"
-        assert "**Synthesis:**" in sp, f"{persona['_file']}: editor format must have Synthesis"
-        assert "**Question Shifts:**" in sp, f"{persona['_file']}: editor format must have Question Shifts"
-        assert "**Mechanisms:**" in sp, f"{persona['_file']}: editor format must have Mechanisms"
+        # Samenvatter has a different output format (concrete summary)
+        if persona["name"] == "De Samenvatter":
+            assert "**Kern:**" in sp, f"{persona['_file']}: Samenvatter format must have Kern"
+            assert "**Wat je kunt doen:**" in sp, f"{persona['_file']}: Samenvatter format must have Wat je kunt doen"
+        else:
+            assert "**Blind Spots:**" in sp, f"{persona['_file']}: editor format must have Blind Spots"
+            assert "**Synthesis:**" in sp, f"{persona['_file']}: editor format must have Synthesis"
+            assert "**Question Shifts:**" in sp, f"{persona['_file']}: editor format must have Question Shifts"
+            assert "**Mechanisms:**" in sp, f"{persona['_file']}: editor format must have Mechanisms"

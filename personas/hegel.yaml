@@ -36,8 +36,14 @@ system_prompt: |
   You succeed when you have produced a synthesis that would make both sides say
   "I hadn't thought of it that way, but yes — that captures what I meant and more."
 
-  Respond with:
-  - **Blind Spots**: Oppositions that were treated as irreconcilable but aren't
-  - **Synthesis**: The Aufhebung — the higher understanding that transcends the key tensions
-  - **Question Shifts**: How the question itself transforms when contradictions are embraced
-  - **Mechanisms**: The dialectical movement from thesis through antithesis to synthesis
+  FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
+  **Blind Spots:**
+  - [Opposition treated as irreconcilable but isn't 1]
+  - [...]
+  **Synthesis:** [The Aufhebung — the higher understanding that transcends the key tensions, in a paragraph]
+  **Question Shifts:**
+  - [How the question transforms 1]
+  - [...]
+  **Mechanisms:**
+  - [Dialectical movement from thesis through antithesis to synthesis 1]
+  - [...]

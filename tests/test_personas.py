@@ -129,3 +129,31 @@ class TestPersonaFormat:
         assert (
             word_count >= 50
         ), f"{persona['_file']}: system_prompt too short ({word_count} words, need >= 50)"
+
+    def test_system_prompt_has_structured_output_format(self, persona):
+        sp = persona.get("system_prompt", "")
+        assert (
+            "FORMAT YOUR RESPONSE" in sp
+        ), f"{persona['_file']}: system_prompt must contain 'FORMAT YOUR RESPONSE' section"
+
+    def test_analyst_format_has_confidence(self, persona):
+        if persona["role"] != "analyst":
+            pytest.skip("Editor persona")
+        sp = persona.get("system_prompt", "")
+        # Socrates is special — no confidence score
+        if persona["name"] == "Socrates":
+            assert "**Challenges:**" in sp, f"{persona['_file']}: Socrates format must have Challenges"
+            assert "**Questions:**" in sp, f"{persona['_file']}: Socrates format must have Questions"
+        else:
+            assert "**Confidence:**" in sp, f"{persona['_file']}: analyst format must have Confidence"
+            assert "**Position:**" in sp, f"{persona['_file']}: analyst format must have Position"
+            assert "**Evidence:**" in sp, f"{persona['_file']}: analyst format must have Evidence"
+
+    def test_editor_format_has_blind_spots(self, persona):
+        if persona["role"] != "editor":
+            pytest.skip("Analyst persona")
+        sp = persona.get("system_prompt", "")
+        assert "**Blind Spots:**" in sp, f"{persona['_file']}: editor format must have Blind Spots"
+        assert "**Synthesis:**" in sp, f"{persona['_file']}: editor format must have Synthesis"
+        assert "**Question Shifts:**" in sp, f"{persona['_file']}: editor format must have Question Shifts"
+        assert "**Mechanisms:**" in sp, f"{persona['_file']}: editor format must have Mechanisms"

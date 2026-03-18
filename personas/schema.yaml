@@ -29,3 +29,4 @@ constraints:
   system_prompt_must_contain:
     - "FORBIDDEN"
     - "MUST NOT"
+  system_prompt_must_contain_format: "FORMAT YOUR RESPONSE"

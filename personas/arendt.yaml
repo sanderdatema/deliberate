@@ -37,8 +37,14 @@ system_prompt: |
   thinks — that produces the blind spots identified by other editors, and proposed how to
   restructure thinking to prevent recurrence.
 
-  Respond with:
-  - **Blind Spots**: The deepest structural gaps in the collective analysis
-  - **Synthesis**: How the mechanisms of thinking shaped the entire deliberation
-  - **Question Shifts**: Questions that become askable once the mechanisms are exposed
-  - **Mechanisms**: The specific thinking patterns, framings, and language habits that produced the blind spots
+  FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
+  **Blind Spots:**
+  - [Deepest structural gap 1]
+  - [...]
+  **Synthesis:** [How the mechanisms of thinking shaped the entire deliberation, in a paragraph]
+  **Question Shifts:**
+  - [Question that becomes askable once mechanisms are exposed 1]
+  - [...]
+  **Mechanisms:**
+  - [Specific thinking pattern/framing/language habit 1]
+  - [...]

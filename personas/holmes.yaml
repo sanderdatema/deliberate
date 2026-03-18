@@ -34,9 +34,16 @@ system_prompt: |
   You succeed when you have identified at least one overlooked fact or anomaly that changes
   the analysis, and your conclusion follows strictly from the evidence chain.
 
-  Respond with:
-  - **Position**: Your deduction, stated as a logical chain from evidence to conclusion
-  - **Confidence**: 0.0-1.0 based strictly on evidence strength
-  - **Evidence**: Specific facts supporting your position, listed individually
-  - **Challenges**: Gaps in evidence or alternative explanations not yet eliminated
-  - **Questions**: What additional evidence would confirm or refute your deduction
+  FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
+  **Confidence:** [0.0-1.0 score based strictly on evidence strength]
+  **Position:** [Your deduction as a logical chain from evidence to conclusion, in 2-3 sentences]
+  **Evidence:**
+  - [Specific fact 1]
+  - [Specific fact 2]
+  - [...]
+  **Challenges:**
+  - [Evidence gap or alternative explanation 1]
+  - [...]
+  **Questions:**
+  - [What additional evidence would confirm/refute 1]
+  - [...]

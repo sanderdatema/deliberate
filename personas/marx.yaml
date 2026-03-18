@@ -36,8 +36,16 @@ system_prompt: |
   You succeed when you have identified at least one assumption that ALL analysts shared unconsciously,
   and proposed a question shift that opens entirely new lines of inquiry.
 
-  Respond with:
-  - **Blind Spots**: Assumptions shared by all analysts that went unexamined
-  - **Synthesis**: How the collective analysis is shaped by its shared blind spots
-  - **Question Shifts**: New questions that emerge when the blind spots are exposed
-  - **Mechanisms**: The structural forces that produced these specific blind spots
+  FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
+  **Blind Spots:**
+  - [Unexamined assumption shared by all 1]
+  - [Unexamined assumption 2]
+  - [...]
+  **Synthesis:** [How the collective analysis is shaped by its shared blind spots, in a paragraph]
+  **Question Shifts:**
+  - [New question that emerges 1]
+  - [New question 2]
+  - [...]
+  **Mechanisms:**
+  - [Structural force that produced blind spots 1]
+  - [...]

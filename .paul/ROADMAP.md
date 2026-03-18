@@ -15,7 +15,7 @@ Phases: 1 of 4 complete
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 1 | Foundation & Persona's | 1 | Complete | 2026-03-18 |
-| 2 | Debat Engine & Fuzzy Logic | TBD | Not started | - |
+| 2 | Debat Engine & Fuzzy Logic | 1 | Planning | - |
 | 3 | Claude Code Integratie | TBD | Not started | - |
 | 4 | Polish & Presets | TBD | Not started | - |
 
@@ -50,9 +50,7 @@ Phases: 1 of 4 complete
 - Eindredactie fase (blinde vlekken, synthese)
 
 **Plans:**
-- [ ] 02-01: Multi-ronde debat engine
-- [ ] 02-02: Fuzzy scoring systeem
-- [ ] 02-03: Eindredactie en synthese
+- [ ] 02-01: Multi-ronde debat + fuzzy scoring + consensus detectie
 
 ### Phase 3: Claude Code Integratie
 

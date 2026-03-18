@@ -11,6 +11,7 @@ from deliberators.models import Config, Persona, Preset
 STANDARD_PERSONAS = frozenset({
     "socrates", "occam", "da-vinci", "holmes", "lupin",
     "templar", "tubman", "weil", "marple", "noether",
+    "ibn-khaldun",
     "marx", "hegel", "arendt", "samenvatter",
 })
 

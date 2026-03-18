@@ -29,7 +29,7 @@ uv run python -m deliberators "Your question here"  # uses default preset
 |--------|----------|---------|--------|-------|
 | quick | 3 (Occam, Holmes, Lupin) | 2 (Marx, Samenvatter) | 1 | ~3 min |
 | balanced | 5 (Socrates, Occam, Da Vinci, Holmes, Lupin) | 3 (Marx, Hegel, Arendt) | 2 | ~5 min |
-| deep | 10 (all) | 3 (all) | 2 | ~10 min |
+| deep | 8 (incl. Ibn Khaldun) | 3 (Marx, Hegel, Arendt) | 2 | ~8 min |
 
 All presets include De Samenvatter as final editor for concrete, actionable output.
 
@@ -50,11 +50,12 @@ personas/               # Thinker definitions (YAML)
   da-vinci.yaml
   holmes.yaml
   lupin.yaml
-  templar.yaml          # Analysts — extended 5
+  templar.yaml          # Analysts — extended
   tubman.yaml
   weil.yaml
   marple.yaml
   noether.yaml
+  ibn-khaldun.yaml      # Analyst — non-Western (cyclical historiography)
   marx.yaml             # Editors (3)
   hegel.yaml
   arendt.yaml

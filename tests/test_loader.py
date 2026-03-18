@@ -19,14 +19,14 @@ CONFIG_PATH = Path("config.yaml")
 
 
 class TestPersonaLoaderLoadAll:
-    """Test loading all 14 standard personas."""
+    """Test loading all 15 standard personas."""
 
     @pytest.fixture(scope="class")
     def all_personas(self):
         return PersonaLoader.load_all(PERSONAS_DIR)
 
-    def test_loads_all_14(self, all_personas):
-        assert len(all_personas) == 14
+    def test_loads_all_15(self, all_personas):
+        assert len(all_personas) == 15
 
     def test_all_standard_names_present(self, all_personas):
         assert set(all_personas.keys()) == STANDARD_PERSONAS
@@ -61,7 +61,7 @@ class TestPersonaLoaderLoadAll:
 
     def test_analysts_count(self, all_personas):
         analysts = [p for p in all_personas.values() if p.role == "analyst"]
-        assert len(analysts) == 10
+        assert len(analysts) == 11
 
     def test_editors_count(self, all_personas):
         editors = [p for p in all_personas.values() if p.role == "editor"]
@@ -207,7 +207,7 @@ class TestConfigLoader:
 
     def test_deep_preset(self, config):
         deep = config.presets["deep"]
-        assert len(deep.analysts) == 10
+        assert len(deep.analysts) == 8
         assert len(deep.editors) == 4
         assert deep.rounds == 2
 

@@ -11,18 +11,23 @@ uv run pytest
 # Use the deliberation skill (balanced preset, default)
 /deliberate "Your question here"
 
-# Quick analysis (3 analysts + 1 editor, 1 round)
+# Quick analysis (3 analysts + 2 editors, 1 round)
 /deliberate --preset quick "Your question here"
 
 # Deep analysis (10 analysts + 3 editors, 2 rounds)
 /deliberate --preset deep "Your question here"
+
+# Run via CLI (requires ANTHROPIC_API_KEY env var)
+uv run python -m deliberators "Your question here" --preset quick
+uv run python -m deliberators "Your question here" --preset balanced
+uv run python -m deliberators "Your question here"  # uses default preset
 ```
 
 ## Presets
 
 | Preset | Analysts | Editors | Rounds | ~Time |
 |--------|----------|---------|--------|-------|
-| quick | 3 (Occam, Holmes, Lupin) | 1 (Marx) | 1 | ~3 min |
+| quick | 3 (Occam, Holmes, Lupin) | 2 (Marx, Samenvatter) | 1 | ~3 min |
 | balanced | 5 (Socrates, Occam, Da Vinci, Holmes, Lupin) | 3 (Marx, Hegel, Arendt) | 2 | ~5 min |
 | deep | 10 (all) | 3 (all) | 2 | ~10 min |
 

@@ -58,7 +58,7 @@ Analisten: {count} | Editors: {count} | Rondes: {rounds}
 ```
 
 **Preset reference:**
-- **quick:** 3 analysts (Occam, Holmes, Lupin) + 1 editor (Marx), 1 round
+- **quick:** 3 analysts (Occam, Holmes, Lupin) + 2 editors (Marx, Samenvatter), 1 round
 - **balanced:** 5 analysts (Socrates, Occam, Da Vinci, Holmes, Lupin) + 3 editors (Marx, Hegel, Arendt), 2 rounds
 - **deep:** 10 analysts (all) + 3 editors (all), 2 rounds
 

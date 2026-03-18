@@ -18,3 +18,18 @@ presets:
     rounds: 2
     analysts: [socrates, occam, da-vinci, holmes, lupin, templar, tubman, ibn-khaldun]
     editors: [marx, hegel, arendt, samenvatter]
+  code_quick:
+    description: "Snelle code review — 3 analisten + 1 editor, 1 ronde"
+    rounds: 1
+    analysts: [linus, schneier, hopper]
+    editors: [code-synthesizer]
+  code_balanced:
+    description: "Standaard code review — 5 analisten + 1 editor, 2 rondes"
+    rounds: 2
+    analysts: [linus, kent-beck, fowler, schneier, hopper]
+    editors: [code-synthesizer]
+  code_deep:
+    description: "Diepgaande code review — 9 analisten + 1 editor, 2 rondes"
+    rounds: 2
+    analysts: [linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, christensen, hopper]
+    editors: [code-synthesizer]

@@ -12,8 +12,8 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 
 | Attribute | Value |
 |-----------|-------|
-| Version | 0.2.0 |
-| Status | Feature-complete: slash command + scripting engine + web viewer |
+| Version | 0.3.0-dev |
+| Status | v0.3 in progress: code personas shipped, context pipeline + command next |
 | Last Updated | 2026-03-18 |
 
 ## Requirements
@@ -42,6 +42,12 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 - [x] Non-Western persona (Ibn Khaldun)
 - [x] Templar/Marx overlap opgelost
 - [x] Deep preset geherbalanceerd (8:4 ratio)
+
+### Validated (Shipped — v0.3, Phase 7)
+
+- [x] 9 code-review analyst personas (Linus, Kent Beck, Fowler, Schneier, Jobs, Don Norman, Jony Ive, Christensen, Hopper)
+- [x] 1 code-review editor persona (Code Synthesizer)
+- [x] 3 code-mode presets (code_quick/code_balanced/code_deep)
 
 ### Out of Scope
 

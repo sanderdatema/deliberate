@@ -13,6 +13,9 @@ STANDARD_PERSONAS = frozenset({
     "templar", "tubman", "weil", "marple", "noether",
     "ibn-khaldun",
     "marx", "hegel", "arendt", "samenvatter",
+    "linus", "kent-beck", "fowler", "schneier", "jobs",
+    "don-norman", "jony-ive", "christensen", "hopper",
+    "code-synthesizer",
 })
 
 REQUIRED_PERSONA_FIELDS = {"name", "role", "system_prompt", "forbidden"}

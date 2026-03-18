@@ -25,8 +25,8 @@ class TestPersonaLoaderLoadAll:
     def all_personas(self):
         return PersonaLoader.load_all(PERSONAS_DIR)
 
-    def test_loads_all_15(self, all_personas):
-        assert len(all_personas) == 15
+    def test_loads_all_25(self, all_personas):
+        assert len(all_personas) == 25
 
     def test_all_standard_names_present(self, all_personas):
         assert set(all_personas.keys()) == STANDARD_PERSONAS
@@ -61,11 +61,11 @@ class TestPersonaLoaderLoadAll:
 
     def test_analysts_count(self, all_personas):
         analysts = [p for p in all_personas.values() if p.role == "analyst"]
-        assert len(analysts) == 11
+        assert len(analysts) == 20
 
     def test_editors_count(self, all_personas):
         editors = [p for p in all_personas.values() if p.role == "editor"]
-        assert len(editors) == 4
+        assert len(editors) == 5
 
 
 class TestPersonaLoaderValidation:
@@ -172,11 +172,14 @@ class TestConfigLoader:
     def config(self):
         return ConfigLoader.load(CONFIG_PATH)
 
-    def test_loads_three_presets(self, config):
-        assert len(config.presets) == 3
+    def test_loads_six_presets(self, config):
+        assert len(config.presets) == 6
 
     def test_preset_names(self, config):
-        assert set(config.presets.keys()) == {"quick", "balanced", "deep"}
+        assert set(config.presets.keys()) == {
+            "quick", "balanced", "deep",
+            "code_quick", "code_balanced", "code_deep",
+        }
 
     def test_default_preset(self, config):
         assert config.default_preset == "balanced"

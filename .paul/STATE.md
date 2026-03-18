@@ -5,22 +5,20 @@
 See: .paul/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door multi-perspectief AI-debat
-**Current focus:** v0.2 — Python scripting engine + live web UI
+**Current focus:** v0.3 — Deliberators for Code
 
 ## Current Position
 
-Milestone: v0.2 Scripting Engine & Live UI
-Phase: 4 of 6 (Python Orchestration Engine) — Planning
 Milestone: v0.3 Deliberators for Code
-Phase: 7 of 9 (Code Personas) — Not started
+Phase: 8 of 9 (Code Context Pipeline) — Not started
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-03-18 — Milestone v0.3 created
+Last activity: 2026-03-18 — Phase 7 complete, transitioned to Phase 8
 
 Progress:
 - v0.1: [██████████] 100% ✓
 - v0.2: [██████████] 100% ✓
-- v0.3: [░░░░░░░░░░] 0%
+- v0.3: [███░░░░░░░] 33%
 
 ## Loop Position
 
@@ -46,6 +44,11 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Slash command wordt thin wrapper rond Python engine
 - Bugfixes uit self-evaluation geïntegreerd in engine rewrite
 
+### Decisions (v0.3)
+- Code Synthesizer als enige code editor (één actionable synthese)
+- Code presets met underscore naming (code_quick) naast bestaande presets
+- Geen schema-wijzigingen nodig — bestaand schema werkt voor code personas
+
 ### Self-Evaluation Findings (input for v0.2)
 - Config/docs mismatch: quick preset 2 editors in config, 1 in docs → fix in 04-01
 - Round 2 receives lossy summary instead of full output → fix in 04-02
@@ -58,8 +61,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Milestone v0.3 created
-Next action: /paul:plan for Phase 7
+Stopped at: Phase 7 complete, ready to plan Phase 8
+Next action: /paul:plan for Phase 8
 Resume file: .paul/ROADMAP.md
 
 ---

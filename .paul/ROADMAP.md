@@ -90,20 +90,23 @@ Driven by self-evaluation findings: config/docs bugs, lossy R2 input, zero quali
 
 ### v0.3 Deliberators for Code
 Status: **In progress**
-Phases: 0 of 3 complete
+Phases: 1 of 3 complete
 
 Multi-perspectief code review met developer/designer personas (Linus Torvalds, Kent Beck, Martin Fowler, Bruce Schneier, Steve Jobs, Don Norman, Jony Ive, Clayton Christensen, Grace Hopper). Agents kunnen code lezen en de gebruiker-fit beoordelen.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 7 | Code Personas | TBD | Not started | — |
+| 7 | Code Personas | 1 | Complete | 2026-03-18 |
 | 8 | Code Context Pipeline | TBD | Not started | — |
 | 9 | Code Integration & Command | TBD | Not started | — |
 
 ## Phase Details (v0.3)
 
-### Phase 7: Code Personas
+### Phase 7: Code Personas ✓
 **Focus:** Create 9 analyst + 1 editor YAML personas for code review, with code-specific forbidden constraints and output formats. Each persona modeled after a real developer/designer.
+
+**Plans:**
+- [x] 07-01: 9 code analyst personas + 1 code editor + 3 code presets (2026-03-18)
 
 **Personas:** Linus Torvalds (code purist), Kent Beck (simplicity/TDD), Martin Fowler (architecture), Bruce Schneier (security), Steve Jobs (product vision), Don Norman (UX), Jony Ive (design craft), Clayton Christensen (user-fit/JTBD), Grace Hopper (pragmatism)
 

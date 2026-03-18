@@ -89,8 +89,8 @@ Driven by self-evaluation findings: config/docs bugs, lossy R2 input, zero quali
 ## Current Milestone
 
 ### v0.3 Deliberators for Code
-Status: **In progress**
-Phases: 2 of 3 complete
+Status: **Complete**
+Phases: 3 of 3 complete
 
 Multi-perspectief code review met developer/designer personas (Linus Torvalds, Kent Beck, Martin Fowler, Bruce Schneier, Steve Jobs, Don Norman, Jony Ive, Clayton Christensen, Grace Hopper). Agents kunnen code lezen en de gebruiker-fit beoordelen.
 
@@ -98,7 +98,7 @@ Multi-perspectief code review met developer/designer personas (Linus Torvalds, K
 |-------|------|-------|--------|-----------|
 | 7 | Code Personas | 1 | Complete | 2026-03-18 |
 | 8 | Code Context Pipeline | 1 | Complete | 2026-03-18 |
-| 9 | Code Integration & Command | TBD | Not started | — |
+| 9 | Code Integration & Command | 1 | Complete | 2026-03-18 |
 
 ## Phase Details (v0.3)
 
@@ -118,8 +118,11 @@ Multi-perspectief code review met developer/designer personas (Linus Torvalds, K
 
 **Depends on:** Phase 7 (personas exist)
 
-### Phase 9: Code Integration & Command
+### Phase 9: Code Integration & Command ✓
 **Focus:** New `/deliberate-code` command (or `--mode code` flag), code-specific presets (quick/balanced/deep), intake adapted for user-fit questions ("Who are you? What do you want from this code?"), web viewer support.
+
+**Plans:**
+- [x] 09-01: /deliberate-code command + documentation + CLI tests (2026-03-18)
 
 **Depends on:** Phase 7, Phase 8
 

@@ -12,8 +12,8 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 
 | Attribute | Value |
 |-----------|-------|
-| Version | 0.3.0-dev |
-| Status | v0.3 in progress: code personas shipped, context pipeline + command next |
+| Version | 0.3.0 |
+| Status | Feature-complete: deliberation + code review + web viewer |
 | Last Updated | 2026-03-18 |
 
 ## Requirements
@@ -54,6 +54,12 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 - [x] CodeContextBuilder (file reading, language detection, binary skip)
 - [x] Engine code_context injection into analyst + editor prompts
 - [x] CLI `--files` flag voor code review files
+
+### Validated (Shipped — v0.3, Phase 9)
+
+- [x] `/deliberate-code` slash command voor multi-perspectief code review
+- [x] Updated `/deliberate` met code review cross-reference
+- [x] Complete CLAUDE.md documentatie voor v0.3
 
 ### Out of Scope
 

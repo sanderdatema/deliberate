@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from deliberators.__main__ import build_parser
 from deliberators.engine import DeliberationResult
 from deliberators.formatter import ResultFormatter
 from deliberators.loader import PersonaLoader
@@ -116,3 +117,38 @@ class TestResultFormatter:
         assert output.count("# ") >= 2  # At least title + round header
         assert output.count("## ") >= 2
         assert output.count("### ") >= 3  # At least 3 analysts
+
+
+class TestCLIParser:
+    """Tests for the CLI argument parser."""
+
+    def test_accepts_files_flag(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["question", "--files", "a.py", "b.py"])
+        assert args.files == [Path("a.py"), Path("b.py")]
+
+    def test_files_default_is_none(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["question"])
+        assert args.files is None
+
+    def test_accepts_code_presets(self) -> None:
+        parser = build_parser()
+        for preset in ["code_quick", "code_balanced", "code_deep"]:
+            args = parser.parse_args(["question", "--preset", preset])
+            assert args.preset == preset
+
+    def test_accepts_general_presets(self) -> None:
+        parser = build_parser()
+        for preset in ["quick", "balanced", "deep"]:
+            args = parser.parse_args(["question", "--preset", preset])
+            assert args.preset == preset
+
+    def test_files_with_preset(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args([
+            "review this", "--preset", "code_balanced", "--files", "main.py",
+        ])
+        assert args.preset == "code_balanced"
+        assert args.files == [Path("main.py")]
+        assert args.question == "review this"

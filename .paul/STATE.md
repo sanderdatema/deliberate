@@ -5,27 +5,28 @@
 See: .paul/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door multi-perspectief AI-debat
-**Current focus:** v0.3 — Deliberators for Code
+**Current focus:** v0.3 complete — Deliberators for Code shipped
 
 ## Current Position
 
 Milestone: v0.3 Deliberators for Code
-Phase: 9 of 9 (Code Integration & Command) — Not started
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-03-18 — Phase 8 complete, transitioned to Phase 9
+Milestone: v0.3 Deliberators for Code — COMPLETE
+Phase: 9 of 9 — All complete
+Plan: All complete
+Status: v0.3 milestone complete
+Last activity: 2026-03-18 — v0.3 milestone complete
 
 Progress:
 - v0.1: [██████████] 100% ✓
 - v0.2: [██████████] 100% ✓
-- v0.3: [██████░░░░] 66%
+- v0.3: [██████████] 100% ✓
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Ready for first PLAN]
+  ✓        ✓        ✓     [Milestone complete]
 ```
 
 ## Accumulated Context
@@ -50,6 +51,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Geen schema-wijzigingen nodig — bestaand schema werkt voor code personas
 - CODE UNDER REVIEW sectie na vraag, voor round/analyst context
 - code_context=None default voor volledige backward compatibility
+- /deliberate-code als apart command (niet --mode flag)
+- Preset mapping: user zegt "quick", command mapt naar "code_quick"
 
 ### Self-Evaluation Findings (input for v0.2)
 - Config/docs mismatch: quick preset 2 editors in config, 1 in docs → fix in 04-01
@@ -63,8 +66,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Phase 8 complete, ready to plan Phase 9
-Next action: /paul:plan for Phase 9
+Stopped at: v0.3 milestone complete
+Next action: /paul:milestone to plan v0.4 or pause
 Resume file: .paul/ROADMAP.md
 
 ---

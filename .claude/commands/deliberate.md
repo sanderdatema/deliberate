@@ -85,7 +85,7 @@ Ask a maximum of 12 questions total (one at a time, wait for each answer). After
 
 3. Read only the YAML files listed in the preset from `personas/` directory.
 
-4. **Custom persona support:** After loading preset personas, check if any additional .yaml files exist in `personas/` that are NOT in the standard 14 (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, marx, hegel, arendt, samenvatter) and NOT schema.yaml. If found, validate they have the required fields (name, role, system_prompt, forbidden) and add them as extra analysts or editors based on their role. Display: `Custom persona geladen: {name}`
+4. **Custom persona support:** After loading preset personas, check if any additional .yaml files exist in `personas/` that are NOT in the standard 25 (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, ibn-khaldun, marx, hegel, arendt, samenvatter, linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, christensen, hopper, code-synthesizer) and NOT schema.yaml. If found, validate they have the required fields (name, role, system_prompt, forbidden) and add them as extra analysts or editors based on their role. Display: `Custom persona geladen: {name}`
 
 5. Display the configuration:
 ```
@@ -357,6 +357,7 @@ Present the complete deliberation as a structured markdown report:
 
 ## Important Notes
 
+- **For code review**, use `/deliberate-code` instead — it uses specialized developer/designer personas (Linus Torvalds, Kent Beck, Martin Fowler, Bruce Schneier, etc.) and reads actual code files.
 - Each agent operates independently within a round — they cannot see each other during parallel execution
 - Round 2 agents see Round 1 output but NOT other Round 2 agents' output
 - Editors see ALL output from both rounds and prior editors

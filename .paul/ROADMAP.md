@@ -90,14 +90,14 @@ Driven by self-evaluation findings: config/docs bugs, lossy R2 input, zero quali
 
 ### v0.3 Deliberators for Code
 Status: **In progress**
-Phases: 1 of 3 complete
+Phases: 2 of 3 complete
 
 Multi-perspectief code review met developer/designer personas (Linus Torvalds, Kent Beck, Martin Fowler, Bruce Schneier, Steve Jobs, Don Norman, Jony Ive, Clayton Christensen, Grace Hopper). Agents kunnen code lezen en de gebruiker-fit beoordelen.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 7 | Code Personas | 1 | Complete | 2026-03-18 |
-| 8 | Code Context Pipeline | TBD | Not started | — |
+| 8 | Code Context Pipeline | 1 | Complete | 2026-03-18 |
 | 9 | Code Integration & Command | TBD | Not started | — |
 
 ## Phase Details (v0.3)
@@ -110,8 +110,11 @@ Multi-perspectief code review met developer/designer personas (Linus Torvalds, K
 
 **Personas:** Linus Torvalds (code purist), Kent Beck (simplicity/TDD), Martin Fowler (architecture), Bruce Schneier (security), Steve Jobs (product vision), Don Norman (UX), Jony Ive (design craft), Clayton Christensen (user-fit/JTBD), Grace Hopper (pragmatism)
 
-### Phase 8: Code Context Pipeline
+### Phase 8: Code Context Pipeline ✓
 **Focus:** Pre-analysis step that reads codebase structure, key files, and patterns; feeds context to agents. Enable agents to use Read/Grep/Glob tools for code exploration during deliberation. Use Serena MCP for semantic code understanding.
+
+**Plans:**
+- [x] 08-01: CodeContextBuilder + engine prompt injection + CLI --files flag (2026-03-18)
 
 **Depends on:** Phase 7 (personas exist)
 

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from anthropic import AsyncAnthropic
 
+from deliberators.context import CodeContextBuilder
 from deliberators.engine import DeliberationEngine
 from deliberators.formatter import ResultFormatter
 from deliberators.loader import ConfigLoader, PersonaLoader
@@ -114,7 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--preset",
-        choices=["quick", "balanced", "deep"],
+        choices=["quick", "balanced", "deep", "code_quick", "code_balanced", "code_deep"],
         default=None,
         help="Preset te gebruiken (default: uit config.yaml)",
     )
@@ -129,6 +130,13 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("personas"),
         help="Pad naar personas directory (default: personas)",
+    )
+    parser.add_argument(
+        "--files",
+        nargs="+",
+        type=Path,
+        default=None,
+        help="Code files to include as context for code review",
     )
     parser.add_argument(
         "--web",
@@ -180,7 +188,11 @@ async def _run(args: argparse.Namespace) -> int:
         on_text=on_text if web else None,
     )
 
-    result = await engine.run(args.question, args.preset)
+    code_context = None
+    if args.files:
+        code_context = CodeContextBuilder.build(args.files)
+
+    result = await engine.run(args.question, args.preset, code_context=code_context)
 
     formatter = ResultFormatter(personas)
     formatted = formatter.format(result)

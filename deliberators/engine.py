@@ -31,6 +31,7 @@ class DeliberationResult:
     rounds: dict[int, dict[str, str]] = field(default_factory=dict)
     editor_outputs: dict[str, str] = field(default_factory=dict)
     samenvatter_output: str | None = None
+    code_context: str | None = None
 
 
 class DeliberationEngine:
@@ -51,13 +52,14 @@ class DeliberationEngine:
         self.on_text = on_text
 
     async def run(
-        self, question: str, preset_name: str | None = None
+        self, question: str, preset_name: str | None = None,
+        code_context: str | None = None,
     ) -> DeliberationResult:
         """Run a full deliberation and return the result."""
         preset_name = preset_name or self.config.default_preset
         preset = ConfigLoader.get_preset(self.config, preset_name)
 
-        result = DeliberationResult(question=question, preset=preset)
+        result = DeliberationResult(question=question, preset=preset, code_context=code_context)
 
         await self._emit(DeliberationEvent(type="deliberation_started", data={"preset": preset_name}))
 
@@ -65,7 +67,7 @@ class DeliberationEngine:
         for round_num in range(1, preset.rounds + 1):
             prior_output = result.rounds.get(round_num - 1) if round_num > 1 else None
             round_output = await self._run_analyst_round(
-                round_num, preset.analysts, question, prior_output
+                round_num, preset.analysts, question, prior_output, code_context
             )
             result.rounds[round_num] = round_output
 
@@ -83,7 +85,7 @@ class DeliberationEngine:
             await self._emit(DeliberationEvent(type="agent_started", agent_name=editor_name))
 
             prompt = self._build_editor_prompt(
-                persona, question, all_analyst_output, prior_editor_output
+                persona, question, all_analyst_output, prior_editor_output, code_context
             )
             output = await self._call_agent(persona, prompt)
 
@@ -108,6 +110,7 @@ class DeliberationEngine:
         analyst_names: list[str],
         question: str,
         prior_round_output: dict[str, str] | None,
+        code_context: str | None = None,
     ) -> dict[str, str]:
         """Run all analysts for a round in parallel."""
         await self._emit(DeliberationEvent(type="round_started", round_number=round_num))
@@ -122,7 +125,7 @@ class DeliberationEngine:
             ))
 
             prompt = self._build_analyst_prompt(
-                persona, question, round_num, prior_round_output
+                persona, question, round_num, prior_round_output, code_context
             )
             output = await self._call_agent(persona, prompt)
 
@@ -161,11 +164,15 @@ class DeliberationEngine:
         question: str,
         round_num: int,
         prior_round_output: dict[str, str] | None,
+        code_context: str | None = None,
     ) -> str:
         """Build the prompt for an analyst agent."""
         parts = [
             f"QUESTION FOR DELIBERATION:\n{question}",
         ]
+
+        if code_context:
+            parts.append(f"\nCODE UNDER REVIEW:\n{code_context}")
 
         if round_num > 1 and prior_round_output:
             perspectives = "\n\n".join(
@@ -196,12 +203,17 @@ class DeliberationEngine:
         question: str,
         all_analyst_output: str,
         prior_editor_output: dict[str, str],
+        code_context: str | None = None,
     ) -> str:
         """Build the prompt for an editor agent."""
         parts = [
             f"ORIGINAL QUESTION:\n{question}",
-            f"\nANALYST PERSPECTIVES (ALL ROUNDS):\n{all_analyst_output}",
         ]
+
+        if code_context:
+            parts.append(f"\nCODE UNDER REVIEW:\n{code_context}")
+
+        parts.append(f"\nANALYST PERSPECTIVES (ALL ROUNDS):\n{all_analyst_output}")
 
         if prior_editor_output:
             editor_text = "\n\n".join(

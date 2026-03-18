@@ -49,6 +49,12 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 - [x] 1 code-review editor persona (Code Synthesizer)
 - [x] 3 code-mode presets (code_quick/code_balanced/code_deep)
 
+### Validated (Shipped — v0.3, Phase 8)
+
+- [x] CodeContextBuilder (file reading, language detection, binary skip)
+- [x] Engine code_context injection into analyst + editor prompts
+- [x] CLI `--files` flag voor code review files
+
 ### Out of Scope
 
 - Persistente conversatie-geschiedenis — elke sessie is zelfstandig

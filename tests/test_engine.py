@@ -360,3 +360,70 @@ class TestDefaultPreset:
         result = await engine.run("Test question")  # No preset specified
 
         assert result.preset.name == "balanced"  # default_preset in config.yaml
+
+
+class TestCodeContext:
+    """Code context injection into prompts."""
+
+    @pytest.mark.asyncio
+    async def test_code_context_in_analyst_prompt(self, config: Config, personas: dict[str, Persona]) -> None:
+        """When code_context is provided, analyst prompts contain CODE UNDER REVIEW."""
+        client = make_mock_client()
+        engine = DeliberationEngine(client, config, personas)
+
+        await engine.run("Review this code", "quick", code_context="def foo(): pass")
+
+        calls = client.messages.stream.call_args_list
+        # First 3 calls are analysts
+        for call in calls[:3]:
+            prompt = call.kwargs["messages"][0]["content"]
+            assert "CODE UNDER REVIEW" in prompt
+            assert "def foo(): pass" in prompt
+
+    @pytest.mark.asyncio
+    async def test_code_context_in_editor_prompt(self, config: Config, personas: dict[str, Persona]) -> None:
+        """When code_context is provided, editor prompts contain CODE UNDER REVIEW."""
+        client = make_mock_client()
+        engine = DeliberationEngine(client, config, personas)
+
+        await engine.run("Review this code", "quick", code_context="def bar(): pass")
+
+        calls = client.messages.stream.call_args_list
+        # Last 2 calls are editors (marx + samenvatter) in quick preset
+        for call in calls[3:]:
+            prompt = call.kwargs["messages"][0]["content"]
+            assert "CODE UNDER REVIEW" in prompt
+            assert "def bar(): pass" in prompt
+
+    @pytest.mark.asyncio
+    async def test_no_code_context_means_no_section(self, config: Config, personas: dict[str, Persona]) -> None:
+        """When code_context is None, prompts do NOT contain CODE UNDER REVIEW."""
+        client = make_mock_client()
+        engine = DeliberationEngine(client, config, personas)
+
+        await engine.run("General question", "quick")
+
+        calls = client.messages.stream.call_args_list
+        for call in calls:
+            prompt = call.kwargs["messages"][0]["content"]
+            assert "CODE UNDER REVIEW" not in prompt
+
+    @pytest.mark.asyncio
+    async def test_code_context_stored_in_result(self, config: Config, personas: dict[str, Persona]) -> None:
+        """code_context is stored on DeliberationResult."""
+        client = make_mock_client()
+        engine = DeliberationEngine(client, config, personas)
+
+        result = await engine.run("Review", "quick", code_context="some code")
+
+        assert result.code_context == "some code"
+
+    @pytest.mark.asyncio
+    async def test_none_code_context_on_result(self, config: Config, personas: dict[str, Persona]) -> None:
+        """code_context is None when not provided."""
+        client = make_mock_client()
+        engine = DeliberationEngine(client, config, personas)
+
+        result = await engine.run("Question", "quick")
+
+        assert result.code_context is None

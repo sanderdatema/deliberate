@@ -10,15 +10,15 @@ See: .paul/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Milestone: v0.3 Deliberators for Code
-Phase: 8 of 9 (Code Context Pipeline) — Not started
+Phase: 9 of 9 (Code Integration & Command) — Not started
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-03-18 — Phase 7 complete, transitioned to Phase 8
+Last activity: 2026-03-18 — Phase 8 complete, transitioned to Phase 9
 
 Progress:
 - v0.1: [██████████] 100% ✓
 - v0.2: [██████████] 100% ✓
-- v0.3: [███░░░░░░░] 33%
+- v0.3: [██████░░░░] 66%
 
 ## Loop Position
 
@@ -48,6 +48,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Code Synthesizer als enige code editor (één actionable synthese)
 - Code presets met underscore naming (code_quick) naast bestaande presets
 - Geen schema-wijzigingen nodig — bestaand schema werkt voor code personas
+- CODE UNDER REVIEW sectie na vraag, voor round/analyst context
+- code_context=None default voor volledige backward compatibility
 
 ### Self-Evaluation Findings (input for v0.2)
 - Config/docs mismatch: quick preset 2 editors in config, 1 in docs → fix in 04-01
@@ -61,8 +63,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Phase 7 complete, ready to plan Phase 8
-Next action: /paul:plan for Phase 8
+Stopped at: Phase 8 complete, ready to plan Phase 9
+Next action: /paul:plan for Phase 9
 Resume file: .paul/ROADMAP.md
 
 ---

@@ -10,11 +10,47 @@ You are the orchestrator of a deliberation team. Your job is to coordinate a tea
 
 The user's arguments: $ARGUMENTS
 
-Parse $ARGUMENTS for a `--preset` flag:
+Parse $ARGUMENTS for flags:
 - If `--preset quick` is present: use the "quick" preset, remove the flag from the question
 - If `--preset deep` is present: use the "deep" preset, remove the flag from the question
 - If `--preset balanced` is present or no flag: use the "balanced" preset
-- Everything remaining after stripping the flag is the **question**
+- If `--web` is present: enable live web viewer (see Web Viewer Integration below)
+- Everything remaining after stripping flags is the **question**
+
+## Web Viewer Integration
+
+If `--web` flag is present:
+
+1. **Check the viewer server is running** via Bash:
+   ```
+   curl -s http://localhost:8000/api/latest-session
+   ```
+   If this fails, tell the user: "Start de web viewer eerst in een apart terminal: `uv run python -m deliberators.web`" and STOP.
+
+2. **Create a session** via Bash:
+   ```
+   curl -s -X POST http://localhost:8000/api/session | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])"
+   ```
+   Store the returned session ID.
+
+3. Display to the user:
+   ```
+   Web viewer: http://localhost:8000
+   Open in je browser om live mee te kijken.
+   ```
+
+4. **Throughout the deliberation**, push events after each significant step using Bash:
+   - After starting deliberation: `curl -s -X POST http://localhost:8000/api/events/{SESSION_ID} -H 'Content-Type: application/json' -d '{"type":"deliberation_started"}'`
+   - After starting a round: `curl -s -X POST ... -d '{"type":"round_started","round_number":N}'`
+   - Before spawning each agent: `curl -s -X POST ... -d '{"type":"agent_started","agent_name":"NAME","round_number":N}'`
+   - After each agent completes: `curl -s -X POST ... -d '{"type":"agent_completed","agent_name":"NAME","round_number":N}'`
+   - Push text output: `curl -s -X POST ... -d '{"type":"text_delta","agent_name":"NAME","text":"OUTPUT"}'`
+   - After editorial starts/ends: push editorial_started/editorial_completed
+   - After completion: push `{"type":"result","markdown":"..."}` and then POST to `/api/events/{SESSION_ID}/done`
+
+5. **Batch text pushing**: After each agent completes, push their FULL output as one text_delta (not streaming — Claude Code agents return complete output). This is simpler and still gives the viewer useful real-time progress as agents finish.
+
+If `--web` is NOT present: skip all curl calls, run normally as before.
 
 ## Step 0: Intake — Beoordeel de casus en vraag door
 

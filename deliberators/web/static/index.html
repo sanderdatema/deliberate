@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deliberators — Live Viewer</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Deliberators</h1>
+    <div id="status" class="status">Wacht op sessie...</div>
+  </header>
+
+  <main>
+    <section id="connect-section">
+      <div class="connect-box">
+        <p>Start een deliberatie met <code>--web http://localhost:8000</code> om hier live mee te kijken.</p>
+        <div class="form-row">
+          <input type="text" id="session-id" placeholder="Sessie ID (wordt automatisch gevuld)">
+          <button id="connect-btn">Verbind</button>
+        </div>
+        <p class="hint">Of wacht — nieuwe sessies verschijnen automatisch.</p>
+      </div>
+    </section>
+
+    <section id="panels-section" class="hidden">
+      <div id="round-label" class="round-label"></div>
+      <div id="agent-panels" class="agent-grid"></div>
+    </section>
+
+    <section id="result-section" class="hidden">
+      <h2>Kort & Concreet</h2>
+      <div id="samenvatter-output" class="samenvatter"></div>
+      <details>
+        <summary>Volledig rapport</summary>
+        <div id="full-report" class="full-report"></div>
+      </details>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

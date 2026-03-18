@@ -8,14 +8,14 @@ Van leeg project naar een werkende Claude Code skill die een configureerbaar tea
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 1 of 4 complete
+Phases: 2 of 4 complete
 
 ## Phases
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 1 | Foundation & Persona's | 1 | Complete | 2026-03-18 |
-| 2 | Debat Engine & Fuzzy Logic | 1 | Planning | - |
+| 2 | Debat Engine & Fuzzy Logic | 1 | Complete | 2026-03-18 |
 | 3 | Claude Code Integratie | TBD | Not started | - |
 | 4 | Polish & Presets | TBD | Not started | - |
 
@@ -50,7 +50,7 @@ Phases: 1 of 4 complete
 - Eindredactie fase (blinde vlekken, synthese)
 
 **Plans:**
-- [ ] 02-01: Multi-ronde debat + fuzzy scoring + consensus detectie
+- [x] 02-01: Multi-ronde debat + fuzzy scoring + consensus detectie (2026-03-18)
 
 ### Phase 3: Claude Code Integratie
 

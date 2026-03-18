@@ -1,0 +1,31 @@
+required_fields:
+  - name
+  - role
+  - reasoning_style
+  - forbidden
+  - focus
+  - output_format
+  - system_prompt
+
+role_values:
+  - analyst
+  - editor
+
+analyst_output_format:
+  - position
+  - confidence
+  - evidence
+  - challenges
+  - questions
+
+editor_output_format:
+  - blind_spots
+  - synthesis
+  - question_shifts
+  - mechanisms
+
+constraints:
+  min_forbidden_items: 2
+  system_prompt_must_contain:
+    - "FORBIDDEN"
+    - "MUST NOT"

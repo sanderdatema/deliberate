@@ -60,12 +60,12 @@ class TestSchemaExists:
 
 
 class TestPersonaCount:
-    def test_eight_personas_exist(self):
-        assert len(PERSONAS) == 8, f"Expected 8 personas, found {len(PERSONAS)}"
+    def test_thirteen_personas_exist(self):
+        assert len(PERSONAS) == 13, f"Expected 13 personas, found {len(PERSONAS)}"
 
-    def test_five_analysts(self):
+    def test_ten_analysts(self):
         analysts = [p for p in PERSONAS if p.get("role") == "analyst"]
-        assert len(analysts) == 5, f"Expected 5 analysts, found {len(analysts)}"
+        assert len(analysts) == 10, f"Expected 10 analysts, found {len(analysts)}"
 
     def test_three_editors(self):
         editors = [p for p in PERSONAS if p.get("role") == "editor"]

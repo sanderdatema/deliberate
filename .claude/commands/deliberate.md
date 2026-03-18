@@ -8,25 +8,43 @@ You are the orchestrator of a deliberation team. Your job is to coordinate a tea
 
 ## Input
 
-The user's question: $ARGUMENTS
+The user's arguments: $ARGUMENTS
 
-## Step 1: Load Personas
+Parse $ARGUMENTS for a `--preset` flag:
+- If `--preset quick` is present: use the "quick" preset, remove the flag from the question
+- If `--preset deep` is present: use the "deep" preset, remove the flag from the question
+- If `--preset balanced` is present or no flag: use the "balanced" preset
+- Everything remaining after stripping the flag is the **question**
 
-Read all YAML files from the `personas/` directory (excluding `schema.yaml`). Each file defines a thinker with:
-- `name`: Display name
-- `role`: "analyst" or "editor"
-- `system_prompt`: The full prompt for this thinker
-- `reasoning_style`: One-line description
+## Step 1: Load Configuration & Personas
 
-Separate them into two groups:
-- **Analysts** (role: analyst): Socrates, Occam, Da Vinci, Holmes, Lupin
-- **Editors** (role: editor): Marx, Hegel, Arendt
+1. Read `config.yaml` from the project root. It defines presets with analyst/editor lists and round counts.
+
+2. Based on the selected preset, determine:
+   - Which analyst persona files to load (by filename without .yaml)
+   - Which editor persona files to load
+   - How many rounds to run
+
+3. Read only the YAML files listed in the preset from `personas/` directory.
+
+4. **Custom persona support:** After loading preset personas, check if any additional .yaml files exist in `personas/` that are NOT in the standard 13 (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, marx, hegel, arendt) and NOT schema.yaml. If found, validate they have the required fields (name, role, system_prompt, forbidden) and add them as extra analysts or editors based on their role. Display: `Custom persona geladen: {name}`
+
+5. Display the configuration:
+```
+Deliberatie gestart met preset: {preset_name}
+Analisten: {count} | Editors: {count} | Rondes: {rounds}
+```
+
+**Preset reference:**
+- **quick:** 3 analysts (Occam, Holmes, Lupin) + 1 editor (Marx), 1 round
+- **balanced:** 5 analysts (Socrates, Occam, Da Vinci, Holmes, Lupin) + 3 editors (Marx, Hegel, Arendt), 2 rounds
+- **deep:** 10 analysts (all) + 3 editors (all), 2 rounds
 
 ## Step 2: Ronde 1 — Onafhankelijke Analyse (Parallel)
 
 Display: `## Ronde 1: Onafhankelijke Analyse`
 
-Spawn ALL analyst agents **in parallel** using the Agent tool. For each analyst:
+Spawn ALL **preset** analyst agents **in parallel** using the Agent tool. For each analyst:
 
 - Use the Agent tool with `model: "opus"`
 - Set `description` to the persona name (e.g., "Socrates analyzes question")
@@ -66,9 +84,11 @@ Lupin: [Inverted position + confidence]
 
 ## Step 4: Ronde 2 — Reactieve Deliberatie (Parallel)
 
+**SKIP this step entirely if the preset has rounds: 1 (e.g., "quick" preset).**
+
 Display: `## Ronde 2: Reactieve Deliberatie`
 
-Spawn ALL analyst agents again **in parallel**. This time each receives the Round 1 summary. For each analyst:
+Spawn ALL preset analyst agents again **in parallel**. This time each receives the Round 1 summary. For each analyst:
 
 - Use the Agent tool with `model: "opus"`
 - Set `name` to the persona name lowercased (e.g., "socrates-r2")

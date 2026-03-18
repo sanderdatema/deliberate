@@ -8,7 +8,7 @@ Van leeg project naar een werkende Claude Code skill die een configureerbaar tea
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 2 of 4 complete
+Phases: 2 of 3 complete
 
 ## Phases
 
@@ -16,22 +16,16 @@ Phases: 2 of 4 complete
 |-------|------|-------|--------|-----------|
 | 1 | Foundation & Persona's | 1 | Complete | 2026-03-18 |
 | 2 | Debat Engine & Fuzzy Logic | 1 | Complete | 2026-03-18 |
-| 3 | Claude Code Integratie | TBD | Not started | - |
-| 4 | Polish & Presets | TBD | Not started | - |
+| 3 | Configuratie & Presets | 1 | Planning | - |
+
+*Note: Original Phase 3 (Claude Code Integratie) was already completed as part of Phase 1+2. Original Phase 3+4 merged into new Phase 3.*
 
 ## Phase Details
 
 ### Phase 1: Foundation & Persona's
 
-**Goal:** Werkende persona-definities in YAML en basis-orchestrator die een enkele agent kan spawnen
+**Goal:** Werkende persona-definities in YAML en basis-orchestrator
 **Depends on:** Nothing (first phase)
-**Research:** Unlikely (established patterns)
-
-**Scope:**
-- Project setup (package structure)
-- YAML persona format met harde constraints
-- Starter-set persona's (Socrates, Occam, Da Vinci, Holmes, Lupin, Marx, Hegel, Arendt)
-- Basis orchestrator die persona's laadt en een agent spawnt
 
 **Plans:**
 - [x] 01-01: Persona's, slash command, en validatie tests (2026-03-18)
@@ -39,50 +33,25 @@ Phases: 2 of 4 complete
 ### Phase 2: Debat Engine & Fuzzy Logic
 
 **Goal:** Multi-ronde debat waarbij agents op elkaars output reageren, met fuzzy scoring
-**Depends on:** Phase 1 (persona's en orchestrator)
-**Research:** Likely (prompt engineering voor gestructureerde output)
-**Research topics:** Optimale prompt structuur voor fuzzy scoring output
-
-**Scope:**
-- Multi-ronde debat flow (parallel agent spawning per ronde)
-- Fuzzy logic output format (confidence scores, evidence, challenges)
-- Score aggregatie en consensus/polarisatie detectie
-- Eindredactie fase (blinde vlekken, synthese)
+**Depends on:** Phase 1
 
 **Plans:**
 - [x] 02-01: Multi-ronde debat + fuzzy scoring + consensus detectie (2026-03-18)
 
-### Phase 3: Claude Code Integratie
+### Phase 3: Configuratie & Presets
 
-**Goal:** Werkende slash command `/deliberate` die het volledige debat orkestreert
-**Depends on:** Phase 2 (debat engine)
-**Research:** Unlikely (Claude Code patterns known)
-
-**Scope:**
-- Slash command definitie
-- Agent-based execution via Claude Code Agent tool
-- Configuratie (team, rondes, model routing)
-- Output formatting als markdown
-
-**Plans:**
-- [ ] 03-01: Slash command en Agent-based executor
-- [ ] 03-02: Configuratie en model routing
-
-### Phase 4: Polish & Presets
-
-**Goal:** Gebruiksvriendelijke presets en gepolijste output
-**Depends on:** Phase 3 (werkende integratie)
+**Goal:** Configureerbaar team, presets (quick/balanced/deep), en custom persona support
+**Depends on:** Phase 2
 **Research:** Unlikely (UX refinement)
 
 **Scope:**
-- Preset teams (quick/balanced/deep)
-- Progress indicators
-- Output formatting en rapport structuur
-- Custom persona support
+- Configuratie YAML (team selectie, aantal rondes, model routing)
+- Preset teams: quick (3 analysts + 1 editor), balanced (5+3, default), deep (alle 13 Aslander-figuren)
+- Custom persona support (user YAML in project)
+- Output formatting verfijning
 
 **Plans:**
-- [ ] 04-01: Presets en progress
-- [ ] 04-02: Output formatting en custom persona's
+- [ ] 03-01: Configuratie, presets, en custom persona's
 
 ---
 *Roadmap created: 2026-03-18*

@@ -10,13 +10,13 @@ See: .paul/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Milestone: v0.1 Initial Release
-Phase: 2 of 4 (Debat Engine & Fuzzy Logic) — Complete
+Phase: 2 of 3 (Debat Engine & Fuzzy Logic) — Complete
 Plan: 02-01 complete
 Status: Loop closed, ready for next phase
 Last activity: 2026-03-18 — Phase 2 complete, SUMMARY created
 
 Progress:
-- Milestone: [█████░░░░░] 50%
+- Milestone: [██████░░░░] 66%
 - Phase 2: [██████████] 100%
 
 ## Loop Position
@@ -49,7 +49,7 @@ None.
 
 Last session: 2026-03-18
 Stopped at: Phase 2 complete, loop closed
-Next action: /paul:plan for Phase 3 (Claude Code Integratie) or Phase 4 (Polish & Presets)
+Next action: /paul:plan for Phase 3 (Configuratie & Presets) — final phase
 Resume file: .paul/phases/02-debat-engine/02-01-SUMMARY.md
 
 ---

@@ -86,6 +86,37 @@ Driven by self-evaluation findings: config/docs bugs, lossy R2 input, zero quali
 **Depends on:** Phase 4, Phase 5
 **Estimated plans:** 2 (integration + persona polish, benchmarking)
 
+## Current Milestone
+
+### v0.3 Deliberators for Code
+Status: **In progress**
+Phases: 0 of 3 complete
+
+Multi-perspectief code review met developer/designer personas (Linus Torvalds, Kent Beck, Martin Fowler, Bruce Schneier, Steve Jobs, Don Norman, Jony Ive, Clayton Christensen, Grace Hopper). Agents kunnen code lezen en de gebruiker-fit beoordelen.
+
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 7 | Code Personas | TBD | Not started | — |
+| 8 | Code Context Pipeline | TBD | Not started | — |
+| 9 | Code Integration & Command | TBD | Not started | — |
+
+## Phase Details (v0.3)
+
+### Phase 7: Code Personas
+**Focus:** Create 9 analyst + 1 editor YAML personas for code review, with code-specific forbidden constraints and output formats. Each persona modeled after a real developer/designer.
+
+**Personas:** Linus Torvalds (code purist), Kent Beck (simplicity/TDD), Martin Fowler (architecture), Bruce Schneier (security), Steve Jobs (product vision), Don Norman (UX), Jony Ive (design craft), Clayton Christensen (user-fit/JTBD), Grace Hopper (pragmatism)
+
+### Phase 8: Code Context Pipeline
+**Focus:** Pre-analysis step that reads codebase structure, key files, and patterns; feeds context to agents. Enable agents to use Read/Grep/Glob tools for code exploration during deliberation. Use Serena MCP for semantic code understanding.
+
+**Depends on:** Phase 7 (personas exist)
+
+### Phase 9: Code Integration & Command
+**Focus:** New `/deliberate-code` command (or `--mode code` flag), code-specific presets (quick/balanced/deep), intake adapted for user-fit questions ("Who are you? What do you want from this code?"), web viewer support.
+
+**Depends on:** Phase 7, Phase 8
+
 ---
 *Roadmap created: 2026-03-18*
 *Last updated: 2026-03-18*

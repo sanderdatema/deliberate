@@ -1,0 +1,28 @@
+default_preset: balanced
+rounds: 2
+model: opus
+timeout: 120
+max_concurrent: 10
+
+presets:
+  quick:
+    description: "Snelle analyse — 3 analisten + 1 editor, 1 ronde"
+    team_size: 3
+    editor_count: 1
+    min_rounds: 1
+    max_rounds: 1
+    summarizer: samenvatter
+  balanced:
+    description: "Standaard deliberatie — 5 analisten + 2 editors, 2 rondes"
+    team_size: 5
+    editor_count: 2
+    min_rounds: 2
+    max_rounds: 2
+    summarizer: samenvatter
+  deep:
+    description: "Diepgaande analyse — 8 analisten + 3 editors, max 3 rondes"
+    team_size: 8
+    editor_count: 3
+    min_rounds: 2
+    max_rounds: 3
+    summarizer: samenvatter

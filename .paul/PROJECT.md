@@ -12,9 +12,9 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 
 | Attribute | Value |
 |-----------|-------|
-| Version | 0.3.0 |
-| Status | Feature-complete: deliberation + code review + web viewer |
-| Last Updated | 2026-03-18 |
+| Version | 0.4.0 |
+| Status | Feature-complete + hardened: deliberation + code review + web viewer |
+| Last Updated | 2026-03-19 |
 
 ## Requirements
 
@@ -60,6 +60,18 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 - [x] `/deliberate-code` slash command voor multi-perspectief code review
 - [x] Updated `/deliberate` met code review cross-reference
 - [x] Complete CLAUDE.md documentatie voor v0.3
+
+### Validated (Shipped — v0.4, Phases 10-12)
+
+- [x] WebPusher connection reuse (één httpx.AsyncClient per sessie)
+- [x] Preset-validatie controleert of persona-keys bestaan bij laden
+- [x] Agent error handling (deliberatie gaat door bij API-fouten)
+- [x] Configurable summarizer via Preset.summarizer field
+- [x] WebPusher extracted to standalone module
+- [x] Persona autodiscovery via glob (no hardcoded lists)
+- [x] Path sanitization en filesize limiet in code context builder
+- [x] Immutable tuple fields in frozen dataclasses
+- [x] CodeContextBuilder refactored to module function
 
 ### Out of Scope
 
@@ -128,3 +140,4 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 
 ---
 *Created: 2026-03-18*
+*Last updated: 2026-03-19 after Phase 12*

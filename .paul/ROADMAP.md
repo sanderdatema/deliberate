@@ -127,8 +127,8 @@ Multi-perspectief code review met developer/designer personas (Linus Torvalds, K
 ## Current Milestone
 
 ### v0.4 Reliability & Code Quality
-Status: **In progress**
-Phases: 2 of 3 complete
+Status: **Complete**
+Phases: 3 of 3 complete
 
 Gedreven door de `/deliberate-code` self-review: 5 reviewers (Linus, Kent Beck, Fowler, Schneier, Hopper) identificeerden 10 actiepunten gerangschikt op severity.
 
@@ -136,7 +136,7 @@ Gedreven door de `/deliberate-code` self-review: 5 reviewers (Linus, Kent Beck, 
 |-------|------|-------|--------|-----------|
 | 10 | Reliability Fixes (HIGH) | 1 | Complete | 2026-03-18 |
 | 11 | Structure & Maintainability (MEDIUM) | 1 | Complete | 2026-03-19 |
-| 12 | Defensive Hardening (LOW) | 1 | Not started | — |
+| 12 | Defensive Hardening (LOW) | 1 | Complete | 2026-03-19 |
 
 ## Phase Details (v0.4)
 
@@ -164,11 +164,17 @@ Gedreven door de `/deliberate-code` self-review: 5 reviewers (Linus, Kent Beck, 
 - Persona autodiscovery via glob (no hardcoded STANDARD_PERSONAS)
 - Dead code removed from formatter.py
 
-### Phase 12: Defensive Hardening
+### Phase 12: Defensive Hardening ✓
 **Focus:** LOW-priority bevindingen: path-sanitisatie + filesize limiet in context.py, tuple ipv list in frozen dataclasses, CodeContextBuilder als module-functies.
 
-**Estimated plans:** 1
-**Depends on:** Phase 10
+**Plans:**
+- [x] 12-01: Path sanitization + filesize limit + tuple fields + class→function refactor (2026-03-19)
+
+**Key deliverables:**
+- Path traversal rejection (`.." in path.parts`)
+- Filesize limit (MAX_FILE_SIZE = 1 MB)
+- Immutable tuple fields in Persona and Preset frozen dataclasses
+- `build_code_context()` module function replaces CodeContextBuilder class
 
 ---
 *Roadmap created: 2026-03-18*

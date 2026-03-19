@@ -128,14 +128,14 @@ Multi-perspectief code review met developer/designer personas (Linus Torvalds, K
 
 ### v0.4 Reliability & Code Quality
 Status: **In progress**
-Phases: 1 of 3 complete
+Phases: 2 of 3 complete
 
 Gedreven door de `/deliberate-code` self-review: 5 reviewers (Linus, Kent Beck, Fowler, Schneier, Hopper) identificeerden 10 actiepunten gerangschikt op severity.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 10 | Reliability Fixes (HIGH) | 1 | Complete | 2026-03-18 |
-| 11 | Structure & Maintainability (MEDIUM) | 1 | Not started | — |
+| 11 | Structure & Maintainability (MEDIUM) | 1 | Complete | 2026-03-19 |
 | 12 | Defensive Hardening (LOW) | 1 | Not started | — |
 
 ## Phase Details (v0.4)
@@ -152,11 +152,17 @@ Gedreven door de `/deliberate-code` self-review: 5 reviewers (Linus, Kent Beck, 
 - Warning logging bij ontbrekende personas in engine
 - _call_agent vangt API-fouten per agent op (deliberatie gaat door)
 
-### Phase 11: Structure & Maintainability
+### Phase 11: Structure & Maintainability ✓
 **Focus:** MEDIUM-priority bevindingen: magic string "samenvatter", dead code in formatter, WebPusher extractie, STANDARD_PERSONAS autodiscovery.
 
-**Estimated plans:** 1 (4 gefocuste fixes in dezelfde bestanden)
-**Depends on:** Phase 10
+**Plans:**
+- [x] 11-01: Preset.summarizer + dead code + WebPusher extraction + autodiscovery (2026-03-19)
+
+**Key deliverables:**
+- Configurable summarizer via Preset.summarizer field in config.yaml
+- WebPusher extracted to deliberators/web_pusher.py
+- Persona autodiscovery via glob (no hardcoded STANDARD_PERSONAS)
+- Dead code removed from formatter.py
 
 ### Phase 12: Defensive Hardening
 **Focus:** LOW-priority bevindingen: path-sanitisatie + filesize limiet in context.py, tuple ipv list in frozen dataclasses, CodeContextBuilder als module-functies.

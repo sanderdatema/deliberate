@@ -8,16 +8,19 @@ presets:
     rounds: 1
     analysts: [occam, holmes, lupin]
     editors: [marx, samenvatter]
+    summarizer: samenvatter
   balanced:
     description: "Standaard deliberatie — 5 analisten + 3 editors, 2 rondes"
     rounds: 2
     analysts: [socrates, occam, da-vinci, holmes, lupin]
     editors: [marx, hegel, arendt, samenvatter]
+    summarizer: samenvatter
   deep:
     description: "Diepgaande analyse — 8 analisten + 4 editors, 2 rondes"
     rounds: 2
     analysts: [socrates, occam, da-vinci, holmes, lupin, templar, tubman, ibn-khaldun]
     editors: [marx, hegel, arendt, samenvatter]
+    summarizer: samenvatter
   code_quick:
     description: "Snelle code review — 3 analisten + 1 editor, 1 ronde"
     rounds: 1

@@ -8,16 +8,6 @@ import yaml
 
 from deliberators.models import Config, Persona, Preset
 
-STANDARD_PERSONAS = frozenset({
-    "socrates", "occam", "da-vinci", "holmes", "lupin",
-    "templar", "tubman", "weil", "marple", "noether",
-    "ibn-khaldun",
-    "marx", "hegel", "arendt", "samenvatter",
-    "linus", "kent-beck", "fowler", "schneier", "jobs",
-    "don-norman", "jony-ive", "christensen", "hopper",
-    "code-synthesizer",
-})
-
 REQUIRED_PERSONA_FIELDS = {"name", "role", "system_prompt", "forbidden"}
 MIN_FORBIDDEN_ITEMS = 2
 
@@ -71,24 +61,13 @@ class PersonaLoader:
 
     @staticmethod
     def load_all(personas_dir: Path) -> dict[str, Persona]:
-        """Load all standard personas from a directory."""
+        """Load all persona YAML files from a directory (autodiscovery)."""
         personas: dict[str, Persona] = {}
-        for name in STANDARD_PERSONAS:
-            path = personas_dir / f"{name}.yaml"
-            if path.exists():
-                personas[name] = PersonaLoader.load(path)
-        return personas
-
-    @staticmethod
-    def discover_custom(personas_dir: Path) -> list[Persona]:
-        """Find and load non-standard persona files."""
-        custom: list[Persona] = []
         for path in sorted(personas_dir.glob("*.yaml")):
-            stem = path.stem
-            if stem in STANDARD_PERSONAS or stem == "schema":
+            if path.stem == "schema":
                 continue
-            custom.append(PersonaLoader.load(path))
-        return custom
+            personas[path.stem] = PersonaLoader.load(path)
+        return personas
 
 
 class ConfigLoader:
@@ -111,6 +90,7 @@ class ConfigLoader:
                 rounds=preset_data.get("rounds", data.get("rounds", 2)),
                 analysts=preset_data.get("analysts", []),
                 editors=preset_data.get("editors", []),
+                summarizer=preset_data.get("summarizer"),
             )
 
         return Config(

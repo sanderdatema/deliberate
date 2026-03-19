@@ -11,11 +11,15 @@ from deliberators.loader import (
     ConfigLoader,
     PersonaLoadError,
     PersonaLoader,
-    STANDARD_PERSONAS,
 )
 
 PERSONAS_DIR = Path("personas")
 CONFIG_PATH = Path("config.yaml")
+
+# Autodiscover expected persona names from the directory (same logic as load_all)
+EXPECTED_PERSONA_NAMES = sorted(
+    p.stem for p in PERSONAS_DIR.glob("*.yaml") if p.stem != "schema"
+)
 
 
 class TestPersonaLoaderLoadAll:
@@ -28,31 +32,31 @@ class TestPersonaLoaderLoadAll:
     def test_loads_all_25(self, all_personas):
         assert len(all_personas) == 25
 
-    def test_all_standard_names_present(self, all_personas):
-        assert set(all_personas.keys()) == STANDARD_PERSONAS
+    def test_all_persona_names_present(self, all_personas):
+        assert set(all_personas.keys()) == set(EXPECTED_PERSONA_NAMES)
 
-    @pytest.mark.parametrize("name", sorted(STANDARD_PERSONAS))
+    @pytest.mark.parametrize("name", EXPECTED_PERSONA_NAMES)
     def test_persona_has_valid_role(self, name):
         persona = PersonaLoader.load(PERSONAS_DIR / f"{name}.yaml")
         assert persona.role in ("analyst", "editor"), (
             f"{name}: role must be 'analyst' or 'editor', got '{persona.role}'"
         )
 
-    @pytest.mark.parametrize("name", sorted(STANDARD_PERSONAS))
+    @pytest.mark.parametrize("name", EXPECTED_PERSONA_NAMES)
     def test_persona_has_min_forbidden(self, name):
         persona = PersonaLoader.load(PERSONAS_DIR / f"{name}.yaml")
         assert len(persona.forbidden) >= 2, (
             f"{name}: must have >= 2 forbidden items, got {len(persona.forbidden)}"
         )
 
-    @pytest.mark.parametrize("name", sorted(STANDARD_PERSONAS))
+    @pytest.mark.parametrize("name", EXPECTED_PERSONA_NAMES)
     def test_persona_system_prompt_has_forbidden(self, name):
         persona = PersonaLoader.load(PERSONAS_DIR / f"{name}.yaml")
         assert "FORBIDDEN" in persona.system_prompt, (
             f"{name}: system_prompt must contain 'FORBIDDEN'"
         )
 
-    @pytest.mark.parametrize("name", sorted(STANDARD_PERSONAS))
+    @pytest.mark.parametrize("name", EXPECTED_PERSONA_NAMES)
     def test_persona_system_prompt_has_must_not(self, name):
         persona = PersonaLoader.load(PERSONAS_DIR / f"{name}.yaml")
         assert "MUST NOT" in persona.system_prompt, (
@@ -126,45 +130,62 @@ class TestPersonaLoaderValidation:
             PersonaLoader.load(path)
 
 
-class TestPersonaLoaderDiscoverCustom:
-    def test_no_custom_in_standard_dir(self):
-        custom = PersonaLoader.discover_custom(PERSONAS_DIR)
-        assert len(custom) == 0
+class TestPersonaLoaderAutodiscovery:
+    """AC-4 (Phase 11): load_all autodiscovers all YAML files."""
 
-    def test_discovers_valid_custom(self, tmp_path):
-        # Write a valid custom persona
-        data = {
-            "name": "Custom Thinker",
+    def test_load_all_discovers_all_yaml(self, tmp_path):
+        """load_all finds all .yaml files except schema.yaml."""
+        valid_data = {
+            "name": "Test Persona",
             "role": "analyst",
-            "reasoning_style": "Custom style",
+            "reasoning_style": "testing",
             "forbidden": ["a", "b"],
-            "focus": "Custom focus",
+            "focus": "testing",
             "output_format": {"position": True},
             "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
         }
-        with open(tmp_path / "custom.yaml", "w") as f:
-            yaml.dump(data, f)
+        with open(tmp_path / "alpha.yaml", "w") as f:
+            yaml.dump({**valid_data, "name": "Alpha"}, f)
+        with open(tmp_path / "beta.yaml", "w") as f:
+            yaml.dump({**valid_data, "name": "Beta"}, f)
 
-        custom = PersonaLoader.discover_custom(tmp_path)
-        assert len(custom) == 1
-        assert custom[0].name == "Custom Thinker"
+        result = PersonaLoader.load_all(tmp_path)
+        assert set(result.keys()) == {"alpha", "beta"}
 
-    def test_rejects_invalid_custom(self, tmp_path):
-        # Write an invalid custom persona (missing fields)
+    def test_load_all_skips_schema_yaml(self, tmp_path):
+        """schema.yaml is excluded from autodiscovery."""
+        with open(tmp_path / "schema.yaml", "w") as f:
+            yaml.dump({"some": "data"}, f)
+
+        result = PersonaLoader.load_all(tmp_path)
+        assert "schema" not in result
+
+    def test_adding_yaml_is_autodiscovered(self, tmp_path):
+        """Adding a new .yaml file makes it appear in load_all."""
+        valid_data = {
+            "name": "New Persona",
+            "role": "analyst",
+            "reasoning_style": "new",
+            "forbidden": ["a", "b"],
+            "focus": "new",
+            "output_format": {},
+            "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
+        }
+        with open(tmp_path / "new-persona.yaml", "w") as f:
+            yaml.dump(valid_data, f)
+
+        result = PersonaLoader.load_all(tmp_path)
+        assert "new-persona" in result
+        assert result["new-persona"].name == "New Persona"
+
+    def test_load_all_rejects_invalid_persona(self, tmp_path):
+        """Invalid YAML persona raises PersonaLoadError during load_all."""
         data = {"name": "Bad", "role": "analyst"}
         with open(tmp_path / "bad.yaml", "w") as f:
             yaml.dump(data, f)
 
         with pytest.raises(PersonaLoadError):
-            PersonaLoader.discover_custom(tmp_path)
-
-    def test_ignores_schema_yaml(self, tmp_path):
-        # schema.yaml should be skipped
-        with open(tmp_path / "schema.yaml", "w") as f:
-            yaml.dump({"some": "data"}, f)
-
-        custom = PersonaLoader.discover_custom(tmp_path)
-        assert len(custom) == 0
+            PersonaLoader.load_all(tmp_path)
 
 
 class TestConfigLoader:

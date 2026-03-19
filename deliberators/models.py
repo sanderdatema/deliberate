@@ -28,6 +28,7 @@ class Preset:
     rounds: int
     analysts: list[str]
     editors: list[str]
+    summarizer: str | None = None
 
 
 @dataclass(frozen=True)

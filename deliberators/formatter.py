@@ -32,7 +32,6 @@ class ResultFormatter:
 
             for name, output in result.rounds[round_num].items():
                 persona = self.personas.get(name)
-                style = f" — {persona.reasoning_style}" if persona else ""
                 label = "Reactie" if round_num > 1 else persona.reasoning_style if persona else ""
                 header = f"{persona.name}{' — ' + label if label else ''}" if persona else name
                 sections.append(f"### {header}\n{output}\n")

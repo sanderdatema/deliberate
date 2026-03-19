@@ -10,7 +10,8 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from deliberators.__main__ import WebPusher, build_parser
+from deliberators.__main__ import build_parser
+from deliberators.web_pusher import WebPusher
 from deliberators.engine import DeliberationResult
 from deliberators.formatter import ResultFormatter
 from deliberators.loader import PersonaLoader

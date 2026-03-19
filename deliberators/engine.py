@@ -93,7 +93,7 @@ class DeliberationEngine:
             )
             output = await self._call_agent(persona, prompt)
 
-            if editor_name == "samenvatter":
+            if editor_name == preset.summarizer:
                 result.samenvatter_output = output
             else:
                 result.editor_outputs[editor_name] = output

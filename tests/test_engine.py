@@ -484,6 +484,64 @@ class TestMissingPersonaWarning:
         assert "ghost-editor" in caplog.text
 
 
+class TestSummarizerConfig:
+    """AC-1 (Phase 11): Summarizer identified by preset.summarizer, not hardcoded string."""
+
+    @pytest.mark.asyncio
+    async def test_preset_summarizer_routes_to_samenvatter_output(
+        self, config: Config, personas: dict[str, Persona]
+    ) -> None:
+        """When preset.summarizer matches an editor, output goes to samenvatter_output."""
+        client = make_mock_client()
+        engine = DeliberationEngine(client, config, personas)
+
+        result = await engine.run("Test", "quick")
+
+        # quick preset has summarizer=samenvatter
+        assert result.samenvatter_output is not None
+        assert "samenvatter" not in result.editor_outputs
+
+    @pytest.mark.asyncio
+    async def test_no_summarizer_means_all_editors_in_outputs(
+        self, personas: dict[str, Persona]
+    ) -> None:
+        """When preset.summarizer is None, all editors go to editor_outputs."""
+        no_summarizer_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="", rounds=1,
+                    analysts=["occam"],
+                    editors=["marx", "samenvatter"],
+                    summarizer=None,
+                ),
+            },
+        )
+        client = make_mock_client()
+        engine = DeliberationEngine(client, no_summarizer_config, personas)
+
+        result = await engine.run("Test", "test")
+
+        assert result.samenvatter_output is None
+        assert "marx" in result.editor_outputs
+        assert "samenvatter" in result.editor_outputs
+
+    @pytest.mark.asyncio
+    async def test_code_preset_has_no_summarizer(
+        self, config: Config, personas: dict[str, Persona]
+    ) -> None:
+        """Code presets have no summarizer — code-synthesizer goes to editor_outputs."""
+        client = make_mock_client()
+        engine = DeliberationEngine(client, config, personas)
+
+        result = await engine.run("Review code", "code_quick")
+
+        assert result.samenvatter_output is None
+        assert "code-synthesizer" in result.editor_outputs
+
+
 class TestAgentErrorHandling:
     """AC-4: Error handling per agent — failed agents don't crash the deliberation."""
 

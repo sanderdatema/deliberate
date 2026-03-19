@@ -5,70 +5,66 @@
 See: .paul/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door multi-perspectief AI-debat
-**Current focus:** v0.3 complete — Deliberators for Code shipped
+**Current focus:** v0.4 Reliability & Code Quality — Phase 10 complete, Phase 11 next
 
 ## Current Position
 
-Milestone: v0.3 Deliberators for Code
-Milestone: v0.3 Deliberators for Code — COMPLETE
-Phase: 9 of 9 — All complete
-Plan: All complete
-Status: v0.3 milestone complete
-Last activity: 2026-03-18 — v0.3 milestone complete
+Milestone: v0.4 Reliability & Code Quality
+Phase: 10 of 12 (Reliability Fixes) — Complete
+Plan: 10-01 complete
+Status: Phase 10 complete, ready for Phase 11
+Last activity: 2026-03-18 — Phase 10 UNIFY complete
 
 Progress:
 - v0.1: [██████████] 100% ✓
 - v0.2: [██████████] 100% ✓
 - v0.3: [██████████] 100% ✓
+- v0.4: [███░░░░░░░] 33%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Milestone complete]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Accumulated Context
 
-### Decisions (v0.1)
+### Decisions (v0.1–v0.3)
 - Opus voor alle agents
-- Multi-round: 2 rondes default (1 voor quick)
-- 14 personas (10 analysts + 3 editors + samenvatter)
-- 3 presets: quick/balanced/deep
-- Custom persona auto-discovery
+- Python engine met Anthropic API direct
+- /deliberate-code als apart command
 
-### Decisions (v0.2)
-- Python engine met Anthropic API direct (niet Claude Code Agent tool)
-- Event/callback systeem voor streaming
-- Web UI via FastAPI + WebSocket
-- Slash command wordt thin wrapper rond Python engine
-- Bugfixes uit self-evaluation geïntegreerd in engine rewrite
+### Decisions (v0.4, Phase 10)
+- Error handling returns error string as agent output (niet exception propagation)
+- Preset validation is apart pre-flight check, engine doet nog steeds graceful skip
+- Broad except in _call_agent (geen retry — dat is apart feature)
 
-### Decisions (v0.3)
-- Code Synthesizer als enige code editor (één actionable synthese)
-- Code presets met underscore naming (code_quick) naast bestaande presets
-- Geen schema-wijzigingen nodig — bestaand schema werkt voor code personas
-- CODE UNDER REVIEW sectie na vraag, voor round/analyst context
-- code_context=None default voor volledige backward compatibility
-- /deliberate-code als apart command (niet --mode flag)
-- Preset mapping: user zegt "quick", command mapt naar "code_quick"
+### v0.4 Code Review Bevindingen Status
 
-### Self-Evaluation Findings (input for v0.2)
-- Config/docs mismatch: quick preset 2 editors in config, 1 in docs → fix in 04-01
-- Round 2 receives lossy summary instead of full output → fix in 04-02
-- Zero runtime constraint validation → address in 04-02
-- Custom persona auto-loading has weaker validation than test suite → fix in 04-01
-- 159 format tests, zero quality/behavioral tests → add in 04-03
-- Templar/Marx overlap in power analysis → address in Phase 6
-- Deep preset ratio structurally unstable (10:3) → address in Phase 6
+**HIGH (Phase 10 — COMPLETE):**
+1. ✅ WebPusher connection churn
+2. ✅ Silent persona failures
+3. ✅ Error handling in _call_agent
+
+**MEDIUM (Phase 11 — next):**
+4. Hardcoded "samenvatter" magic string
+5. Dead code `style` variabele in formatter.py
+6. God-module __main__.py — WebPusher extractie
+7. STANDARD_PERSONAS frozenset — Shotgun Surgery
+
+**LOW (Phase 12):**
+8. Path-sanitisatie/filesize limiet
+9. list[str] in frozen dataclass
+10. CodeContextBuilder class → module functies
 
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: v0.3 milestone complete
-Next action: /paul:milestone to plan v0.4 or pause
-Resume file: .paul/ROADMAP.md
+Stopped at: Phase 10 complete, loop closed
+Next action: /paul:plan for Phase 11 (Structure & Maintainability) or /commit to commit Phase 10
+Resume file: .paul/phases/10-reliability-fixes/10-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

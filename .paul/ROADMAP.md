@@ -86,8 +86,6 @@ Driven by self-evaluation findings: config/docs bugs, lossy R2 input, zero quali
 **Depends on:** Phase 4, Phase 5
 **Estimated plans:** 2 (integration + persona polish, benchmarking)
 
-## Current Milestone
-
 ### v0.3 Deliberators for Code
 Status: **Complete**
 Phases: 3 of 3 complete
@@ -125,6 +123,46 @@ Multi-perspectief code review met developer/designer personas (Linus Torvalds, K
 - [x] 09-01: /deliberate-code command + documentation + CLI tests (2026-03-18)
 
 **Depends on:** Phase 7, Phase 8
+
+## Current Milestone
+
+### v0.4 Reliability & Code Quality
+Status: **In progress**
+Phases: 1 of 3 complete
+
+Gedreven door de `/deliberate-code` self-review: 5 reviewers (Linus, Kent Beck, Fowler, Schneier, Hopper) identificeerden 10 actiepunten gerangschikt op severity.
+
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 10 | Reliability Fixes (HIGH) | 1 | Complete | 2026-03-18 |
+| 11 | Structure & Maintainability (MEDIUM) | 1 | Not started | — |
+| 12 | Defensive Hardening (LOW) | 1 | Not started | — |
+
+## Phase Details (v0.4)
+
+### Phase 10: Reliability Fixes ✓
+**Focus:** Fix de 3 HIGH-priority bevindingen: WebPusher connection churn, silent persona failures, en ontbrekende error handling in _call_agent.
+
+**Plans:**
+- [x] 10-01: WebPusher reuse + preset validatie + agent error handling (2026-03-18)
+
+**Key deliverables:**
+- WebPusher hergebruikt één httpx.AsyncClient per sessie
+- Preset-validatie controleert of persona-keys bestaan bij laden
+- Warning logging bij ontbrekende personas in engine
+- _call_agent vangt API-fouten per agent op (deliberatie gaat door)
+
+### Phase 11: Structure & Maintainability
+**Focus:** MEDIUM-priority bevindingen: magic string "samenvatter", dead code in formatter, WebPusher extractie, STANDARD_PERSONAS autodiscovery.
+
+**Estimated plans:** 1 (4 gefocuste fixes in dezelfde bestanden)
+**Depends on:** Phase 10
+
+### Phase 12: Defensive Hardening
+**Focus:** LOW-priority bevindingen: path-sanitisatie + filesize limiet in context.py, tuple ipv list in frozen dataclasses, CodeContextBuilder als module-functies.
+
+**Estimated plans:** 1
+**Depends on:** Phase 10
 
 ---
 *Roadmap created: 2026-03-18*

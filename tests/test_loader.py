@@ -231,3 +231,77 @@ class TestConfigLoaderValidation:
 
         with pytest.raises(ConfigLoadError, match="missing 'presets'"):
             ConfigLoader.load(path)
+
+
+class TestValidatePresetPersonas:
+    """AC-2: Preset persona validation catches missing personas."""
+
+    def test_valid_config_passes(self):
+        """All standard presets pass validation with all standard personas loaded."""
+        config = ConfigLoader.load(CONFIG_PATH)
+        personas = PersonaLoader.load_all(PERSONAS_DIR)
+        # Should not raise
+        ConfigLoader.validate_preset_personas(config, personas)
+
+    def test_missing_analyst_raises(self):
+        """Preset referencing non-existent analyst raises ValueError."""
+        from deliberators.models import Config, Preset
+
+        config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test",
+                    description="Test preset",
+                    rounds=1,
+                    analysts=["nonexistent-persona"],
+                    editors=[],
+                ),
+            },
+        )
+        with pytest.raises(ValueError, match="nonexistent-persona"):
+            ConfigLoader.validate_preset_personas(config, {})
+
+    def test_missing_editor_raises(self):
+        """Preset referencing non-existent editor raises ValueError."""
+        from deliberators.models import Config, Preset
+
+        config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test",
+                    description="Test preset",
+                    rounds=1,
+                    analysts=[],
+                    editors=["ghost-editor"],
+                ),
+            },
+        )
+        with pytest.raises(ValueError, match="ghost-editor"):
+            ConfigLoader.validate_preset_personas(config, {})
+
+    def test_error_message_includes_preset_name(self):
+        """Error message tells you which preset has the problem."""
+        from deliberators.models import Config, Preset
+
+        config = Config(
+            default_preset="broken",
+            rounds=1,
+            model="opus",
+            presets={
+                "broken": Preset(
+                    name="broken",
+                    description="Broken preset",
+                    rounds=1,
+                    analysts=["missing"],
+                    editors=[],
+                ),
+            },
+        )
+        with pytest.raises(ValueError, match="preset 'broken'"):
+            ConfigLoader.validate_preset_personas(config, {})

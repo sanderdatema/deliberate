@@ -128,3 +128,20 @@ class ConfigLoader:
                 f"Unknown preset '{name}'. Available: {', '.join(config.presets.keys())}"
             )
         return config.presets[name]
+
+    @staticmethod
+    def validate_preset_personas(config: Config, personas: dict[str, Persona]) -> None:
+        """Validate that all persona keys referenced in presets exist in the loaded personas.
+
+        Raises ValueError with a clear message listing which preset references
+        which missing persona(s).
+        """
+        missing: list[str] = []
+        for preset_name, preset in config.presets.items():
+            for name in preset.analysts + preset.editors:
+                if name not in personas:
+                    missing.append(f"preset '{preset_name}' references unknown persona '{name}'")
+        if missing:
+            raise ValueError(
+                f"Preset persona validation failed:\n  - " + "\n  - ".join(missing)
+            )

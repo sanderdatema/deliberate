@@ -5,14 +5,16 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 
-from deliberators.__main__ import build_parser
+from deliberators.__main__ import WebPusher, build_parser
 from deliberators.engine import DeliberationResult
 from deliberators.formatter import ResultFormatter
 from deliberators.loader import PersonaLoader
-from deliberators.models import Persona, Preset
+from deliberators.models import DeliberationEvent, Persona, Preset
 
 PERSONAS_DIR = Path("personas")
 
@@ -152,3 +154,47 @@ class TestCLIParser:
         assert args.preset == "code_balanced"
         assert args.files == [Path("main.py")]
         assert args.question == "review this"
+
+
+class TestWebPusherClientReuse:
+    """AC-1: WebPusher reuses a single httpx.AsyncClient."""
+
+    def test_single_client_instance(self) -> None:
+        """WebPusher creates one client in __init__, not per call."""
+        pusher = WebPusher("http://localhost:8000")
+        assert isinstance(pusher._client, httpx.AsyncClient)
+
+    @pytest.mark.asyncio
+    async def test_reuses_client_across_calls(self) -> None:
+        """All push methods use the same client instance."""
+        pusher = WebPusher("http://localhost:8000")
+        pusher.session_id = "test-session"
+
+        # Track which client instance is used
+        original_client = pusher._client
+        post_calls: list[httpx.AsyncClient] = []
+
+        original_post = original_client.post
+
+        async def tracking_post(*args, **kwargs):
+            post_calls.append(pusher._client)
+            # Return a mock response
+            mock_resp = httpx.Response(200, json={"ok": True})
+            return mock_resp
+
+        with patch.object(original_client, "post", side_effect=tracking_post):
+            event = DeliberationEvent(type="round_started", round_number=1)
+            await pusher.push_event(event)
+            await pusher.push_text("test-agent", "hello")
+
+        # All calls should have used the same client
+        assert len(post_calls) == 2
+        assert all(c is original_client for c in post_calls)
+
+    @pytest.mark.asyncio
+    async def test_close_closes_client(self) -> None:
+        """close() calls aclose() on the underlying client."""
+        pusher = WebPusher("http://localhost:8000")
+        with patch.object(pusher._client, "aclose", new_callable=AsyncMock) as mock_aclose:
+            await pusher.close()
+            mock_aclose.assert_called_once()

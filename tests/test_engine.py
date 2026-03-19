@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -427,3 +428,153 @@ class TestCodeContext:
         result = await engine.run("Question", "quick")
 
         assert result.code_context is None
+
+
+class TestMissingPersonaWarning:
+    """AC-3: Engine logs warning when persona is missing."""
+
+    @pytest.mark.asyncio
+    async def test_warns_on_missing_analyst(self, config: Config, personas: dict[str, Persona], caplog: pytest.LogCaptureFixture) -> None:
+        """Missing analyst triggers a warning log."""
+        # Use a preset with a nonexistent analyst
+        mini_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="", rounds=1,
+                    analysts=["occam", "ghost-analyst"],
+                    editors=["samenvatter"],
+                ),
+            },
+        )
+        client = make_mock_client()
+        engine = DeliberationEngine(client, mini_config, personas)
+
+        with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
+            result = await engine.run("Test", "test")
+
+        assert "ghost-analyst" in caplog.text
+        # Deliberation should still complete
+        assert result.rounds[1]["occam"] != ""
+        assert result.rounds[1]["ghost-analyst"] == ""
+
+    @pytest.mark.asyncio
+    async def test_warns_on_missing_editor(self, config: Config, personas: dict[str, Persona], caplog: pytest.LogCaptureFixture) -> None:
+        """Missing editor triggers a warning log."""
+        mini_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="", rounds=1,
+                    analysts=["occam"],
+                    editors=["ghost-editor", "samenvatter"],
+                ),
+            },
+        )
+        client = make_mock_client()
+        engine = DeliberationEngine(client, mini_config, personas)
+
+        with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
+            await engine.run("Test", "test")
+
+        assert "ghost-editor" in caplog.text
+
+
+class TestAgentErrorHandling:
+    """AC-4: Error handling per agent — failed agents don't crash the deliberation."""
+
+    @pytest.mark.asyncio
+    async def test_failed_agent_returns_error_string(self, config: Config, personas: dict[str, Persona]) -> None:
+        """A failing API call returns an error message string, not an exception."""
+        call_count = 0
+
+        def failing_stream(**kwargs):
+            nonlocal call_count
+            call_count += 1
+            system = kwargs.get("system", "")
+            # Make the first analyst (Occam) fail
+            if "Willem van Occam" in system:
+                raise RuntimeError("API connection timeout")
+            return MockStream(f"Success #{call_count}")
+
+        client = AsyncMock()
+        client.messages.stream = MagicMock(side_effect=failing_stream)
+        engine = DeliberationEngine(client, config, personas)
+
+        result = await engine.run("Test", "quick")
+
+        # Occam should have error message
+        assert "[Agent fout:" in result.rounds[1]["occam"]
+        assert "RuntimeError" in result.rounds[1]["occam"]
+        # Other analysts should have succeeded
+        assert result.rounds[1]["holmes"] != ""
+        assert "[Agent fout:" not in result.rounds[1]["holmes"]
+        assert result.rounds[1]["lupin"] != ""
+
+    @pytest.mark.asyncio
+    async def test_deliberation_completes_despite_failure(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Editors still run even if an analyst fails."""
+        call_count = 0
+
+        def failing_stream(**kwargs):
+            nonlocal call_count
+            call_count += 1
+            system = kwargs.get("system", "")
+            if "Willem van Occam" in system:
+                raise RuntimeError("Simulated failure")
+            return MockStream(f"Output #{call_count}")
+
+        client = AsyncMock()
+        client.messages.stream = MagicMock(side_effect=failing_stream)
+        engine = DeliberationEngine(client, config, personas)
+
+        result = await engine.run("Test", "quick")
+
+        # Editors should still have run
+        assert "marx" in result.editor_outputs
+        assert result.samenvatter_output is not None
+
+    @pytest.mark.asyncio
+    async def test_error_message_reaches_editors(self, config: Config, personas: dict[str, Persona]) -> None:
+        """The error message from a failed agent is visible to editors."""
+        def failing_stream(**kwargs):
+            system = kwargs.get("system", "")
+            if "Willem van Occam" in system:
+                raise RuntimeError("Simulated failure")
+            return MockStream("Normal output")
+
+        client = AsyncMock()
+        client.messages.stream = MagicMock(side_effect=failing_stream)
+        engine = DeliberationEngine(client, config, personas)
+
+        await engine.run("Test", "quick")
+
+        # Check that the editor (marx) received the error in compiled output
+        calls = client.messages.stream.call_args_list
+        marx_calls = [c for c in calls if "Karl Marx" in (c.kwargs.get("system", "") or "")]
+        assert len(marx_calls) == 1
+        marx_prompt = marx_calls[0].kwargs["messages"][0]["content"]
+        assert "[Agent fout:" in marx_prompt
+
+    @pytest.mark.asyncio
+    async def test_logs_error_on_failure(self, config: Config, personas: dict[str, Persona], caplog: pytest.LogCaptureFixture) -> None:
+        """Failed agent triggers an error log."""
+        def failing_stream(**kwargs):
+            system = kwargs.get("system", "")
+            if "Willem van Occam" in system:
+                raise RuntimeError("Connection refused")
+            return MockStream("OK")
+
+        client = AsyncMock()
+        client.messages.stream = MagicMock(side_effect=failing_stream)
+        engine = DeliberationEngine(client, config, personas)
+
+        with caplog.at_level(logging.ERROR, logger="deliberators.engine"):
+            await engine.run("Test", "quick")
+
+        assert "Willem van Occam" in caplog.text
+        assert "Connection refused" in caplog.text

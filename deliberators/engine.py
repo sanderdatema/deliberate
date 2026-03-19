@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
 from anthropic import AsyncAnthropic
+
+logger = logging.getLogger(__name__)
 
 from deliberators.loader import ConfigLoader, PersonaLoader
 from deliberators.models import Config, DeliberationEvent, Persona, Preset
@@ -79,6 +82,7 @@ class DeliberationEngine:
 
         for editor_name in preset.editors:
             if editor_name not in self.personas:
+                logger.warning("Editor persona '%s' not found, skipping", editor_name)
                 continue
             persona = self.personas[editor_name]
 
@@ -117,6 +121,7 @@ class DeliberationEngine:
 
         async def run_one(name: str) -> tuple[str, str]:
             if name not in self.personas:
+                logger.warning("Persona '%s' not found, skipping", name)
                 return name, ""
             persona = self.personas[name]
 
@@ -145,18 +150,22 @@ class DeliberationEngine:
         """Make a single API call to an agent, streaming the response."""
         model = MODEL_MAP.get(self.config.model, self.config.model)
 
-        async with self.client.messages.stream(
-            model=model,
-            max_tokens=4096,
-            system=persona.system_prompt,
-            messages=[{"role": "user", "content": prompt}],
-        ) as stream:
-            chunks: list[str] = []
-            async for text in stream.text_stream:
-                chunks.append(text)
-                if self.on_text:
-                    await _maybe_await(self.on_text(persona.name, text))
-            return "".join(chunks)
+        try:
+            async with self.client.messages.stream(
+                model=model,
+                max_tokens=4096,
+                system=persona.system_prompt,
+                messages=[{"role": "user", "content": prompt}],
+            ) as stream:
+                chunks: list[str] = []
+                async for text in stream.text_stream:
+                    chunks.append(text)
+                    if self.on_text:
+                        await _maybe_await(self.on_text(persona.name, text))
+                return "".join(chunks)
+        except Exception as e:
+            logger.error("Agent '%s' failed: %s", persona.name, e)
+            return f"[Agent fout: {persona.name} — {type(e).__name__}: {e}]"
 
     def _build_analyst_prompt(
         self,

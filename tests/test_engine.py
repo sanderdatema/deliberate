@@ -444,8 +444,8 @@ class TestMissingPersonaWarning:
             presets={
                 "test": Preset(
                     name="test", description="", rounds=1,
-                    analysts=["occam", "ghost-analyst"],
-                    editors=["samenvatter"],
+                    analysts=("occam", "ghost-analyst"),
+                    editors=("samenvatter",),
                 ),
             },
         )
@@ -470,8 +470,8 @@ class TestMissingPersonaWarning:
             presets={
                 "test": Preset(
                     name="test", description="", rounds=1,
-                    analysts=["occam"],
-                    editors=["ghost-editor", "samenvatter"],
+                    analysts=("occam",),
+                    editors=("ghost-editor", "samenvatter"),
                 ),
             },
         )
@@ -513,8 +513,8 @@ class TestSummarizerConfig:
             presets={
                 "test": Preset(
                     name="test", description="", rounds=1,
-                    analysts=["occam"],
-                    editors=["marx", "samenvatter"],
+                    analysts=("occam",),
+                    editors=("marx", "samenvatter"),
                     summarizer=None,
                 ),
             },

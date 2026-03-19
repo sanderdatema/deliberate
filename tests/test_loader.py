@@ -188,6 +188,27 @@ class TestPersonaLoaderAutodiscovery:
             PersonaLoader.load_all(tmp_path)
 
 
+class TestImmutableFields:
+    """AC-3 (Phase 12): Frozen dataclass fields use tuple, not list."""
+
+    def test_persona_forbidden_is_tuple(self):
+        """Persona.forbidden is a tuple after loading from YAML."""
+        persona = PersonaLoader.load(PERSONAS_DIR / "socrates.yaml")
+        assert isinstance(persona.forbidden, tuple)
+
+    def test_preset_analysts_is_tuple(self):
+        """Preset.analysts is a tuple after loading from config."""
+        config = ConfigLoader.load(CONFIG_PATH)
+        preset = config.presets["quick"]
+        assert isinstance(preset.analysts, tuple)
+
+    def test_preset_editors_is_tuple(self):
+        """Preset.editors is a tuple after loading from config."""
+        config = ConfigLoader.load(CONFIG_PATH)
+        preset = config.presets["quick"]
+        assert isinstance(preset.editors, tuple)
+
+
 class TestConfigLoader:
     @pytest.fixture(scope="class")
     def config(self):
@@ -210,7 +231,7 @@ class TestConfigLoader:
 
     def test_quick_preset_analysts(self, config):
         quick = config.presets["quick"]
-        assert quick.analysts == ["occam", "holmes", "lupin"]
+        assert quick.analysts == ("occam", "holmes", "lupin")
 
     def test_quick_preset_has_two_editors(self, config):
         """Regression test: config.yaml has 2 editors for quick (marx + samenvatter).
@@ -277,8 +298,8 @@ class TestValidatePresetPersonas:
                     name="test",
                     description="Test preset",
                     rounds=1,
-                    analysts=["nonexistent-persona"],
-                    editors=[],
+                    analysts=("nonexistent-persona",),
+                    editors=(),
                 ),
             },
         )
@@ -298,8 +319,8 @@ class TestValidatePresetPersonas:
                     name="test",
                     description="Test preset",
                     rounds=1,
-                    analysts=[],
-                    editors=["ghost-editor"],
+                    analysts=(),
+                    editors=("ghost-editor",),
                 ),
             },
         )
@@ -319,8 +340,8 @@ class TestValidatePresetPersonas:
                     name="broken",
                     description="Broken preset",
                     rounds=1,
-                    analysts=["missing"],
-                    editors=[],
+                    analysts=("missing",),
+                    editors=(),
                 ),
             },
         )

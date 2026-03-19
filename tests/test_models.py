@@ -11,7 +11,7 @@ class TestPersona:
             name="Test",
             role="analyst",
             reasoning_style="Test style",
-            forbidden=["a", "b"],
+            forbidden=("a", "b"),
             focus="Test focus",
             output_format={"position": True, "confidence": True},
             system_prompt="You are FORBIDDEN from X. You MUST NOT Y.",
@@ -25,7 +25,7 @@ class TestPersona:
             name="Editor",
             role="editor",
             reasoning_style="Editorial style",
-            forbidden=["a", "b", "c"],
+            forbidden=("a", "b", "c"),
             focus="Find blind spots",
             output_format={"blind_spots": True, "synthesis": True},
             system_prompt="You are FORBIDDEN from X. You MUST NOT Y.",
@@ -37,7 +37,7 @@ class TestPersona:
             name="Test",
             role="analyst",
             reasoning_style="",
-            forbidden=["a", "b"],
+            forbidden=("a", "b"),
             focus="",
             output_format={},
             system_prompt="FORBIDDEN MUST NOT",
@@ -52,22 +52,22 @@ class TestPreset:
             name="test",
             description="A test preset",
             rounds=2,
-            analysts=["a", "b"],
-            editors=["c"],
+            analysts=("a", "b"),
+            editors=("c",),
         )
         assert p.name == "test"
         assert p.rounds == 2
         assert len(p.analysts) == 2
 
     def test_frozen(self):
-        p = Preset(name="t", description="", rounds=1, analysts=[], editors=[])
+        p = Preset(name="t", description="", rounds=1, analysts=(), editors=())
         with pytest.raises(AttributeError):
             p.rounds = 3  # type: ignore[misc]
 
 
 class TestConfig:
     def test_create(self):
-        preset = Preset(name="q", description="", rounds=1, analysts=["a"], editors=["b"])
+        preset = Preset(name="q", description="", rounds=1, analysts=("a",), editors=("b",))
         c = Config(
             default_preset="q",
             rounds=2,

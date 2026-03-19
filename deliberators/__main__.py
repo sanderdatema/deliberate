@@ -9,7 +9,7 @@ from pathlib import Path
 
 from anthropic import AsyncAnthropic
 
-from deliberators.context import CodeContextBuilder
+from deliberators.context import build_code_context
 from deliberators.engine import DeliberationEngine
 from deliberators.formatter import ResultFormatter
 from deliberators.loader import ConfigLoader, PersonaLoader
@@ -127,7 +127,7 @@ async def _run(args: argparse.Namespace) -> int:
 
     code_context = None
     if args.files:
-        code_context = CodeContextBuilder.build(args.files)
+        code_context = build_code_context(args.files)
 
     result = await engine.run(args.question, args.preset, code_context=code_context)
 

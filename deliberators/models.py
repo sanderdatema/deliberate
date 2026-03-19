@@ -13,7 +13,7 @@ class Persona:
     name: str
     role: Literal["analyst", "editor"]
     reasoning_style: str
-    forbidden: list[str]
+    forbidden: tuple[str, ...]
     focus: str
     output_format: dict[str, bool]
     system_prompt: str
@@ -26,8 +26,8 @@ class Preset:
     name: str
     description: str
     rounds: int
-    analysts: list[str]
-    editors: list[str]
+    analysts: tuple[str, ...]
+    editors: tuple[str, ...]
     summarizer: str | None = None
 
 

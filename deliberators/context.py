@@ -7,6 +7,8 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+MAX_FILE_SIZE: int = 1_048_576  # 1 MB
+
 EXTENSION_MAP: dict[str, str] = {
     ".py": "python",
     ".js": "javascript",
@@ -53,40 +55,45 @@ def _is_binary(path: Path) -> bool:
         return True
 
 
-class CodeContextBuilder:
-    """Reads code files and formats them as structured context for agent prompts."""
+def build_code_context(paths: list[Path]) -> str | None:
+    """Build a code context string from a list of file paths.
 
-    @staticmethod
-    def build(paths: list[Path]) -> str | None:
-        """Build a code context string from a list of file paths.
+    Returns None if no valid files could be read.
+    Skips files with path traversal components (..) and files exceeding MAX_FILE_SIZE.
+    """
+    sections: list[str] = []
 
-        Returns None if no valid files could be read.
-        """
-        sections: list[str] = []
+    for path in paths:
+        if ".." in path.parts:
+            logger.warning("Path traversal detected, skipping: %s", path)
+            continue
 
-        for path in paths:
-            if not path.exists():
-                logger.warning("File not found, skipping: %s", path)
-                continue
+        if not path.exists():
+            logger.warning("File not found, skipping: %s", path)
+            continue
 
-            if not path.is_file():
-                logger.warning("Not a file, skipping: %s", path)
-                continue
+        if not path.is_file():
+            logger.warning("Not a file, skipping: %s", path)
+            continue
 
-            if _is_binary(path):
-                logger.warning("Binary file, skipping: %s", path)
-                continue
+        if path.stat().st_size > MAX_FILE_SIZE:
+            logger.warning("File exceeds %d bytes, skipping: %s", MAX_FILE_SIZE, path)
+            continue
 
-            language = _detect_language(path)
-            try:
-                content = path.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as e:
-                logger.warning("Could not read %s: %s", path, e)
-                continue
+        if _is_binary(path):
+            logger.warning("Binary file, skipping: %s", path)
+            continue
 
-            sections.append(f"## File: {path} ({language})\n```{language}\n{content}\n```")
+        language = _detect_language(path)
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            logger.warning("Could not read %s: %s", path, e)
+            continue
 
-        if not sections:
-            return None
+        sections.append(f"## File: {path} ({language})\n```{language}\n{content}\n```")
 
-        return "\n\n".join(sections)
+    if not sections:
+        return None
+
+    return "\n\n".join(sections)

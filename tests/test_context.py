@@ -1,10 +1,10 @@
-"""Tests for deliberators.context — CodeContextBuilder."""
+"""Tests for deliberators.context — build_code_context and helpers."""
 
 from pathlib import Path
 
 import pytest
 
-from deliberators.context import CodeContextBuilder, _detect_language, _is_binary
+from deliberators.context import MAX_FILE_SIZE, build_code_context, _detect_language, _is_binary
 
 
 class TestDetectLanguage:
@@ -46,12 +46,12 @@ class TestIsBinary:
         assert _is_binary(f) is True
 
 
-class TestCodeContextBuilder:
+class TestBuildCodeContext:
     def test_single_python_file(self, tmp_path):
         f = tmp_path / "main.py"
         f.write_text("def hello():\n    pass\n")
 
-        result = CodeContextBuilder.build([f])
+        result = build_code_context([f])
         assert result is not None
         assert "## File:" in result
         assert "(python)" in result
@@ -64,7 +64,7 @@ class TestCodeContextBuilder:
         ts = tmp_path / "b.ts"
         ts.write_text("const y = 2;")
 
-        result = CodeContextBuilder.build([py, ts])
+        result = build_code_context([py, ts])
         assert result is not None
         assert "(python)" in result
         assert "(typescript)" in result
@@ -76,17 +76,17 @@ class TestCodeContextBuilder:
         good.write_text("pass")
         bad = tmp_path / "nope.py"
 
-        result = CodeContextBuilder.build([bad, good])
+        result = build_code_context([bad, good])
         assert result is not None
         assert "pass" in result
         assert "nope" not in result
 
     def test_all_nonexistent_returns_none(self, tmp_path):
-        result = CodeContextBuilder.build([tmp_path / "a.py", tmp_path / "b.py"])
+        result = build_code_context([tmp_path / "a.py", tmp_path / "b.py"])
         assert result is None
 
     def test_empty_list_returns_none(self):
-        result = CodeContextBuilder.build([])
+        result = build_code_context([])
         assert result is None
 
     def test_binary_file_skipped(self, tmp_path):
@@ -95,7 +95,7 @@ class TestCodeContextBuilder:
         binary = tmp_path / "bad.bin"
         binary.write_bytes(b"\x00\x01\x02")
 
-        result = CodeContextBuilder.build([binary, txt])
+        result = build_code_context([binary, txt])
         assert result is not None
         assert "good" in result
         assert "bad.bin" not in result
@@ -106,6 +106,69 @@ class TestCodeContextBuilder:
         f = tmp_path / "ok.py"
         f.write_text("fine")
 
-        result = CodeContextBuilder.build([subdir, f])
+        result = build_code_context([subdir, f])
         assert result is not None
         assert "fine" in result
+
+
+class TestPathSanitization:
+    """AC-1: Path traversal components (..) are rejected."""
+
+    def test_dotdot_in_path_skipped(self, tmp_path):
+        """A path containing '..' is skipped even if the file exists."""
+        # Create a valid file via a clean path
+        subdir = tmp_path / "sub"
+        subdir.mkdir()
+        f = subdir / "ok.py"
+        f.write_text("clean")
+
+        # Reference it via a path with ".."
+        traversal_path = tmp_path / "sub" / ".." / "sub" / "ok.py"
+
+        result = build_code_context([traversal_path])
+        assert result is None  # skipped — no valid files
+
+    def test_dotdot_skipped_but_clean_files_kept(self, tmp_path):
+        """Traversal path is skipped while clean paths are kept."""
+        good = tmp_path / "ok.py"
+        good.write_text("clean code")
+
+        bad = tmp_path / ".." / "etc" / "passwd"
+
+        result = build_code_context([bad, good])
+        assert result is not None
+        assert "clean code" in result
+        assert "passwd" not in result
+
+
+class TestFilesizeLimit:
+    """AC-2: Files exceeding MAX_FILE_SIZE are skipped."""
+
+    def test_oversized_file_skipped(self, tmp_path):
+        """A file larger than MAX_FILE_SIZE is excluded."""
+        big = tmp_path / "huge.py"
+        big.write_text("x" * (MAX_FILE_SIZE + 1))
+
+        result = build_code_context([big])
+        assert result is None
+
+    def test_oversized_skipped_but_small_kept(self, tmp_path):
+        """Oversized file is skipped, normal file is kept."""
+        big = tmp_path / "huge.py"
+        big.write_text("x" * (MAX_FILE_SIZE + 1))
+        small = tmp_path / "ok.py"
+        small.write_text("small code")
+
+        result = build_code_context([big, small])
+        assert result is not None
+        assert "small code" in result
+        assert "huge.py" not in result
+
+    def test_file_at_exact_limit_is_kept(self, tmp_path):
+        """A file exactly at MAX_FILE_SIZE is NOT skipped."""
+        exact = tmp_path / "exact.py"
+        exact.write_text("x" * MAX_FILE_SIZE)
+
+        result = build_code_context([exact])
+        assert result is not None
+        assert "exact.py" in result

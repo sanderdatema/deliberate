@@ -53,7 +53,7 @@ class PersonaLoader:
             name=data["name"],
             role=data["role"],
             reasoning_style=data.get("reasoning_style", ""),
-            forbidden=forbidden,
+            forbidden=tuple(forbidden),
             focus=data.get("focus", ""),
             output_format=data.get("output_format", {}),
             system_prompt=system_prompt,
@@ -88,8 +88,8 @@ class ConfigLoader:
                 name=name,
                 description=preset_data.get("description", ""),
                 rounds=preset_data.get("rounds", data.get("rounds", 2)),
-                analysts=preset_data.get("analysts", []),
-                editors=preset_data.get("editors", []),
+                analysts=tuple(preset_data.get("analysts", [])),
+                editors=tuple(preset_data.get("editors", [])),
                 summarizer=preset_data.get("summarizer"),
             )
 

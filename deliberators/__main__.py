@@ -12,7 +12,7 @@ from anthropic import AsyncAnthropic
 from deliberators.context import build_code_context
 from deliberators.engine import DeliberationEngine
 from deliberators.formatter import ResultFormatter
-from deliberators.loader import ConfigLoader, PersonaLoader
+from deliberators.loader import ConfigLoader, PersonaLoader, resolve_config_path, resolve_personas_dir
 from deliberators.models import DeliberationEvent
 from deliberators.web_pusher import WebPusher
 
@@ -88,8 +88,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 async def _run(args: argparse.Namespace) -> int:
     """Run the deliberation and return exit code."""
-    config = ConfigLoader.load(args.config)
-    personas = PersonaLoader.load_all(args.personas_dir)
+    config_path = resolve_config_path(args.config)
+    personas_dir = resolve_personas_dir(args.personas_dir)
+    config = ConfigLoader.load(config_path)
+    personas = PersonaLoader.load_all(personas_dir)
 
     ConfigLoader.validate_preset_personas(config, personas)
 

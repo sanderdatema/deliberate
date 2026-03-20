@@ -11,6 +11,8 @@ from deliberators.loader import (
     ConfigLoader,
     PersonaLoadError,
     PersonaLoader,
+    resolve_config_path,
+    resolve_personas_dir,
 )
 
 PERSONAS_DIR = Path("personas")
@@ -347,3 +349,55 @@ class TestValidatePresetPersonas:
         )
         with pytest.raises(ValueError, match="preset 'broken'"):
             ConfigLoader.validate_preset_personas(config, {})
+
+
+class TestResolvePathFallback:
+    """AC-1..AC-4 (Phase 14): Fallback chain for config and personas paths."""
+
+    def test_resolve_config_cwd_exists(self, tmp_path, monkeypatch):
+        """CWD config.yaml takes priority."""
+        (tmp_path / "config.yaml").write_text("presets: {}")
+        monkeypatch.chdir(tmp_path)
+        result = resolve_config_path()
+        assert result == Path("config.yaml")
+
+    def test_resolve_config_user_dir(self, tmp_path, monkeypatch):
+        """~/.config/deliberators/config.yaml is used when CWD has none."""
+        user_dir = tmp_path / "user_config"
+        user_dir.mkdir()
+        (user_dir / "config.yaml").write_text("presets: {}")
+        monkeypatch.setattr("deliberators.loader._USER_CONFIG_DIR", user_dir)
+        empty_cwd = tmp_path / "empty_cwd"
+        empty_cwd.mkdir()
+        monkeypatch.chdir(empty_cwd)
+        result = resolve_config_path()
+        assert result == user_dir / "config.yaml"
+
+    def test_resolve_config_bundled_fallback(self, tmp_path, monkeypatch):
+        """Bundled config is used when no CWD or user config exists."""
+        monkeypatch.setattr("deliberators.loader._USER_CONFIG_DIR", tmp_path / "nonexistent")
+        monkeypatch.chdir(tmp_path)
+        result = resolve_config_path()
+        assert "deliberators/data/config.yaml" in str(result)
+        assert result.exists()
+
+    def test_resolve_config_explicit_override(self):
+        """Explicit non-default path is returned directly."""
+        custom = Path("/custom/config.yaml")
+        result = resolve_config_path(custom)
+        assert result == custom
+
+    def test_resolve_personas_cwd_exists(self, tmp_path, monkeypatch):
+        """CWD personas/ takes priority."""
+        (tmp_path / "personas").mkdir()
+        monkeypatch.chdir(tmp_path)
+        result = resolve_personas_dir()
+        assert result == Path("personas")
+
+    def test_resolve_personas_bundled_fallback(self, tmp_path, monkeypatch):
+        """Bundled personas dir is used when no CWD or user dir exists."""
+        monkeypatch.setattr("deliberators.loader._USER_CONFIG_DIR", tmp_path / "nonexistent")
+        monkeypatch.chdir(tmp_path)
+        result = resolve_personas_dir()
+        assert "deliberators/data/personas" in str(result)
+        assert result.is_dir()

@@ -1,6 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "deliberators"
-version = "0.2.0"
+version = "0.5.0"
 description = "Multi-perspectief AI deliberatie team — Claude Code skill"
 requires-python = ">=3.11"
 dependencies = [
@@ -11,11 +15,17 @@ dependencies = [
     "uvicorn[standard]>=0.34.0",
 ]
 
+[project.scripts]
+deliberators = "deliberators.__main__:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0.2",
     "pytest-asyncio>=0.25.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["deliberators"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

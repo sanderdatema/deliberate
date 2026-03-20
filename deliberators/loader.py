@@ -9,6 +9,34 @@ import yaml
 from deliberators.models import Config, Persona, Preset
 
 REQUIRED_PERSONA_FIELDS = {"name", "role", "system_prompt", "forbidden"}
+_BUNDLED_DATA_DIR = Path(__file__).parent / "data"
+_USER_CONFIG_DIR = Path.home() / ".config" / "deliberators"
+
+
+def resolve_config_path(explicit: Path | None = None) -> Path:
+    """Resolve config.yaml path: explicit → CWD → user config → bundled."""
+    if explicit is not None and explicit != Path("config.yaml"):
+        return explicit
+    cwd_path = Path("config.yaml")
+    if cwd_path.exists():
+        return cwd_path
+    user_path = _USER_CONFIG_DIR / "config.yaml"
+    if user_path.exists():
+        return user_path
+    return _BUNDLED_DATA_DIR / "config.yaml"
+
+
+def resolve_personas_dir(explicit: Path | None = None) -> Path:
+    """Resolve personas directory: explicit → CWD → user config → bundled."""
+    if explicit is not None and explicit != Path("personas"):
+        return explicit
+    cwd_path = Path("personas")
+    if cwd_path.is_dir():
+        return cwd_path
+    user_path = _USER_CONFIG_DIR / "personas"
+    if user_path.is_dir():
+        return user_path
+    return _BUNDLED_DATA_DIR / "personas"
 MIN_FORBIDDEN_ITEMS = 2
 
 

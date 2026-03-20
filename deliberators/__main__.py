@@ -7,8 +7,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-from anthropic import AsyncAnthropic
-
 from deliberators.context import build_code_context
 from deliberators.engine import DeliberationEngine
 from deliberators.formatter import ResultFormatter
@@ -118,9 +116,7 @@ async def _run(args: argparse.Namespace) -> int:
         if web:
             await web.push_text(agent_name, text)
 
-    client = AsyncAnthropic()
     engine = DeliberationEngine(
-        client=client,
         config=config,
         personas=personas,
         on_event=on_event,

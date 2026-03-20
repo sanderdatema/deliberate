@@ -8,18 +8,10 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
-from anthropic import AsyncAnthropic
-
 logger = logging.getLogger(__name__)
 
 from deliberators.loader import ConfigLoader, PersonaLoader
 from deliberators.models import Config, DeliberationEvent, Persona, Preset
-
-MODEL_MAP = {
-    "opus": "claude-opus-4-20250514",
-    "sonnet": "claude-sonnet-4-5-20250929",
-    "haiku": "claude-haiku-4-5-20251001",
-}
 
 EventCallback = Callable[[DeliberationEvent], Awaitable[None] | None]
 TextCallback = Callable[[str, str], Awaitable[None] | None]  # (agent_name, text_delta)
@@ -38,17 +30,15 @@ class DeliberationResult:
 
 
 class DeliberationEngine:
-    """Orchestrates a multi-agent deliberation using the Anthropic API."""
+    """Orchestrates a multi-agent deliberation using claude -p subprocesses."""
 
     def __init__(
         self,
-        client: AsyncAnthropic,
         config: Config,
         personas: dict[str, Persona],
         on_event: EventCallback | None = None,
         on_text: TextCallback | None = None,
     ) -> None:
-        self.client = client
         self.config = config
         self.personas = personas
         self.on_event = on_event
@@ -147,22 +137,27 @@ class DeliberationEngine:
         return round_output
 
     async def _call_agent(self, persona: Persona, prompt: str) -> str:
-        """Make a single API call to an agent, streaming the response."""
-        model = MODEL_MAP.get(self.config.model, self.config.model)
-
+        """Call an agent via claude -p subprocess."""
         try:
-            async with self.client.messages.stream(
-                model=model,
-                max_tokens=4096,
-                system=persona.system_prompt,
-                messages=[{"role": "user", "content": prompt}],
-            ) as stream:
-                chunks: list[str] = []
-                async for text in stream.text_stream:
-                    chunks.append(text)
-                    if self.on_text:
-                        await _maybe_await(self.on_text(persona.name, text))
-                return "".join(chunks)
+            proc = await asyncio.create_subprocess_exec(
+                "claude", "-p",
+                "--model", self.config.model,
+                "--system-prompt", persona.system_prompt,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate(input=prompt.encode())
+
+            if proc.returncode != 0:
+                error_msg = stderr.decode().strip()
+                logger.error("Agent '%s' failed (exit %d): %s", persona.name, proc.returncode, error_msg)
+                return f"[Agent fout: {persona.name} — exit code {proc.returncode}]"
+
+            output = stdout.decode()
+            if self.on_text:
+                await _maybe_await(self.on_text(persona.name, output))
+            return output
         except Exception as e:
             logger.error("Agent '%s' failed: %s", persona.name, e)
             return f"[Agent fout: {persona.name} — {type(e).__name__}: {e}]"

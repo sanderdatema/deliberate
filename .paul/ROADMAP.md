@@ -124,8 +124,6 @@ Multi-perspectief code review met developer/designer personas (Linus Torvalds, K
 
 **Depends on:** Phase 7, Phase 8
 
-## Current Milestone
-
 ### v0.4 Reliability & Code Quality
 Status: **Complete**
 Phases: 3 of 3 complete
@@ -175,6 +173,57 @@ Gedreven door de `/deliberate-code` self-review: 5 reviewers (Linus, Kent Beck, 
 - Filesize limit (MAX_FILE_SIZE = 1 MB)
 - Immutable tuple fields in Persona and Preset frozen dataclasses
 - `build_code_context()` module function replaces CodeContextBuilder class
+
+## Current Milestone
+
+### v0.5 Global Install
+Status: **Complete**
+Phases: 3 of 3 complete
+
+Maak `deliberators` installeerbaar via `uv tool install` zodat `/deliberate` en `/deliberate-code` vanuit elk project werken. Personas en config gebundeld als package data, loader zoekt eerst lokaal, dan in `~/.config/deliberators/`, dan in de package.
+
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 13 | Package Data Bundling | 1 | Complete | 2026-03-20 |
+| 14 | Fallback Loader | 1 | Complete | 2026-03-20 |
+| 15 | Slash Command Update | 1 | Complete | 2026-03-20 |
+
+## Phase Details (v0.5)
+
+### Phase 13: Package Data Bundling ✓
+**Focus:** Move `personas/` en `config.yaml` inside het Python package als `package_data`. Voeg `[project.scripts]` entry point toe in `pyproject.toml`. Update version naar 0.5.0.
+
+**Plans:**
+- [x] 13-01: Bundled data directory + hatchling build system + get_data_path() helper (2026-03-20)
+
+**Key deliverables:**
+- `deliberators/data/` met gebundelde config.yaml en 26 persona YAML files
+- `[build-system]` met hatchling backend
+- `[project.scripts]` entry point: `deliberators` CLI command
+- `get_data_path()` helper in `__init__.py`
+- Version bump naar 0.5.0
+
+### Phase 14: Fallback Loader ✓
+**Focus:** Update `loader.py` met fallback-keten: CWD → `~/.config/deliberators/` → gebundelde package data. Update `__main__.py` arg defaults om de fallback-keten te gebruiken.
+
+**Plans:**
+- [x] 14-01: resolve_config_path() + resolve_personas_dir() + CLI integration (2026-03-20)
+
+**Key deliverables:**
+- `resolve_config_path()` en `resolve_personas_dir()` met 3-level fallback
+- `__main__.py` gebruikt resolve functions
+- CLI werkt vanuit elke directory
+
+### Phase 15: Slash Command Update ✓
+**Focus:** Update globale `~/.claude/commands/deliberate.md` en `deliberate-code.md` om de geïnstalleerde package te gebruiken. Verifieer dat `uv tool install .` werkt end-to-end.
+
+**Plans:**
+- [x] 15-01: Path resolution preamble + parameterized paths + global copies (2026-03-20)
+
+**Key deliverables:**
+- Step 0.5 "Resolve Data Paths" in beide commands
+- CONFIG_PATH en PERSONAS_DIR geparametriseerd
+- Global copies bijgewerkt in `~/.claude/commands/`
 
 ---
 *Roadmap created: 2026-03-18*

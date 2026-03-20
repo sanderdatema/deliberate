@@ -12,9 +12,9 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 
 | Attribute | Value |
 |-----------|-------|
-| Version | 0.4.0 |
-| Status | Feature-complete + hardened: deliberation + code review + web viewer |
-| Last Updated | 2026-03-19 |
+| Version | 0.5.0 |
+| Status | Globally installable: deliberation + code review + web viewer |
+| Last Updated | 2026-03-20 |
 
 ## Requirements
 
@@ -72,6 +72,15 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 - [x] Path sanitization en filesize limiet in code context builder
 - [x] Immutable tuple fields in frozen dataclasses
 - [x] CodeContextBuilder refactored to module function
+
+### Validated (Shipped — v0.5, Phases 13-15)
+
+- [x] Bundled personas + config als package data (deliberators/data/)
+- [x] hatchling build backend + [project.scripts] entry point
+- [x] get_data_path() helper voor gebundelde data locatie
+- [x] Fallback loader: CWD → ~/.config/deliberators/ → bundled
+- [x] Slash commands met dynamische pad-resolutie
+- [x] Global install via `uv tool install .`
 
 ### Out of Scope
 
@@ -140,4 +149,4 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 
 ---
 *Created: 2026-03-18*
-*Last updated: 2026-03-19 after Phase 12*
+*Last updated: 2026-03-20 after Phase 15*

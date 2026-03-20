@@ -1,4 +1,4 @@
-"""Tests for deliberators.engine — orchestration with mocked Anthropic API."""
+"""Tests for deliberators.engine — orchestration with mocked claude -p subprocess."""
 
 from __future__ import annotations
 
@@ -17,62 +17,75 @@ PERSONAS_DIR = Path("personas")
 CONFIG_PATH = Path("config.yaml")
 
 
-class MockStream:
-    """Mock for client.messages.stream() async context manager."""
+class MockProcess:
+    """Mock for asyncio.create_subprocess_exec result."""
 
-    def __init__(self, text: str = "Mock response") -> None:
-        self._text = text
-        self._chunks = [text[i : i + 10] for i in range(0, len(text), 10)] or [text]
+    def __init__(self, stdout_text: str = "Mock response", returncode: int = 0) -> None:
+        self.returncode = returncode
+        self._stdout = stdout_text.encode()
+        self._stderr = b""
+        self.stdin_text: str = ""
 
-    async def __aenter__(self) -> MockStream:
-        return self
+    async def communicate(self, input: bytes | None = None) -> tuple[bytes, bytes]:
+        if input:
+            self.stdin_text = input.decode()
+        return self._stdout, self._stderr
 
-    async def __aexit__(self, *args: object) -> None:
-        pass
+
+class SubprocessTracker:
+    """Track all claude -p subprocess calls and their inputs."""
+
+    def __init__(
+        self, response_map: dict[str, str] | None = None, default: str = "Mock output"
+    ) -> None:
+        self.calls: list[dict] = []
+        self.response_map = response_map or {}
+        self.default = default
+        self._count = 0
+
+    def __call__(self, *args: str, **kwargs: object) -> MockProcess:
+        self._count += 1
+
+        # Extract system prompt from args
+        args_list = list(args)
+        system_prompt = ""
+        if "--system-prompt" in args_list:
+            idx = args_list.index("--system-prompt")
+            if idx + 1 < len(args_list):
+                system_prompt = str(args_list[idx + 1])
+
+        # Determine response text
+        response_text = f"{self.default} #{self._count}"
+        for name, response in self.response_map.items():
+            if name.lower() in system_prompt.lower():
+                response_text = response
+                break
+
+        proc = MockProcess(response_text)
+        self.calls.append({
+            "args": args,
+            "kwargs": kwargs,
+            "system_prompt": system_prompt,
+            "process": proc,
+        })
+        return proc
 
     @property
-    def text_stream(self) -> MockTextStream:
-        return MockTextStream(self._chunks)
+    def call_count(self) -> int:
+        return len(self.calls)
+
+    def get_system_prompt(self, index: int) -> str:
+        return self.calls[index]["system_prompt"]
+
+    def get_stdin(self, index: int) -> str:
+        return self.calls[index]["process"].stdin_text
 
 
-class MockTextStream:
-    """Async iterator over text chunks."""
-
-    def __init__(self, chunks: list[str]) -> None:
-        self._chunks = chunks
-        self._index = 0
-
-    def __aiter__(self) -> MockTextStream:
-        return self
-
-    async def __anext__(self) -> str:
-        if self._index >= len(self._chunks):
-            raise StopAsyncIteration
-        chunk = self._chunks[self._index]
-        self._index += 1
-        return chunk
-
-
-def make_mock_client(response_map: dict[str, str] | None = None, default: str = "Mock output") -> AsyncMock:
-    """Create a mock AsyncAnthropic client.
-
-    response_map: maps persona name (from system prompt) to response text.
-    """
-    client = AsyncMock()
-    call_count = 0
-
-    def stream_side_effect(**kwargs):  # noqa: ANN003
-        nonlocal call_count
-        call_count += 1
-        system = kwargs.get("system", "")
-        if response_map:
-            for name, response in response_map.items():
-                if name.lower() in system.lower():
-                    return MockStream(response)
-        return MockStream(f"{default} #{call_count}")
-
-    client.messages.stream = MagicMock(side_effect=stream_side_effect)
-    return client
+def make_mock_subprocess(
+    response_map: dict[str, str] | None = None, default: str = "Mock output"
+) -> SubprocessTracker:
+    """Create a SubprocessTracker for mocking claude -p calls."""
+    return SubprocessTracker(response_map=response_map, default=default)
 
 
 @pytest.fixture()
@@ -91,20 +104,20 @@ class TestQuickPreset:
     @pytest.mark.asyncio
     async def test_correct_agent_count(self, config: Config, personas: dict[str, Persona]) -> None:
         """AC-1: quick = 3 analyst calls + 2 editor calls = 5 total."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "quick")
 
-        result = await engine.run("Test question", "quick")
-
-        assert client.messages.stream.call_count == 5  # 3 analysts + 2 editors
+        assert tracker.call_count == 5  # 3 analysts + 2 editors
 
     @pytest.mark.asyncio
     async def test_result_structure(self, config: Config, personas: dict[str, Persona]) -> None:
         """AC-1: Result has correct fields."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Test question", "quick")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test question", "quick")
 
         assert result.question == "Test question"
         assert result.preset.name == "quick"
@@ -116,10 +129,10 @@ class TestQuickPreset:
     @pytest.mark.asyncio
     async def test_only_one_round(self, config: Config, personas: dict[str, Persona]) -> None:
         """Quick preset has rounds=1, so only Round 1 exists."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Test question", "quick")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test question", "quick")
 
         assert len(result.rounds) == 1
         assert 2 not in result.rounds
@@ -130,21 +143,21 @@ class TestBalancedPreset:
 
     @pytest.mark.asyncio
     async def test_correct_agent_count(self, config: Config, personas: dict[str, Persona]) -> None:
-        """AC-1: balanced = 5 analysts × 2 rounds + 4 editors = 14 total."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        """AC-1: balanced = 5 analysts x 2 rounds + 4 editors = 14 total."""
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
-        result = await engine.run("Test question", "balanced")
-
-        assert client.messages.stream.call_count == 14
+        assert tracker.call_count == 14
 
     @pytest.mark.asyncio
     async def test_two_rounds(self, config: Config, personas: dict[str, Persona]) -> None:
         """Balanced has 2 analyst rounds."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Test question", "balanced")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test question", "balanced")
 
         assert 1 in result.rounds
         assert 2 in result.rounds
@@ -158,10 +171,8 @@ class TestParallelAndSequential:
     @pytest.mark.asyncio
     async def test_analysts_run_via_gather(self, config: Config, personas: dict[str, Persona]) -> None:
         """Verify analyst round uses asyncio.gather (parallel execution)."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess()
 
-        # Patch asyncio.gather to verify it's called
         original_gather = asyncio.gather
         gather_calls: list[int] = []
 
@@ -169,7 +180,11 @@ class TestParallelAndSequential:
             gather_calls.append(len(coros))
             return await original_gather(*coros, **kwargs)
 
-        with patch("deliberators.engine.asyncio.gather", side_effect=tracking_gather):
+        with (
+            patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
+            patch("deliberators.engine.asyncio.gather", side_effect=tracking_gather),
+        ):
+            engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "quick")
 
         # Should have been called once for 1 round with 3 analysts
@@ -184,23 +199,21 @@ class TestParallelAndSequential:
             "Georg Hegel": "Hegel editorial output",
             "Hannah Arendt": "Arendt editorial output",
         }
-        client = make_mock_client(response_map=response_map)
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess(response_map=response_map)
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
-        await engine.run("Test question", "balanced")
-
-        # Check Hegel's call included Marx's output
-        calls = client.messages.stream.call_args_list
-        # Find the Hegel call (system prompt contains "Georg Hegel")
-        hegel_calls = [c for c in calls if "Georg Hegel" in (c.kwargs.get("system", "") or "")]
+        # Find the Hegel call by system prompt
+        hegel_calls = [c for c in tracker.calls if "Georg Hegel" in c["system_prompt"]]
         assert len(hegel_calls) == 1
-        hegel_prompt = hegel_calls[0].kwargs["messages"][0]["content"]
+        hegel_prompt = hegel_calls[0]["process"].stdin_text
         assert "Marx editorial output" in hegel_prompt
 
         # Find the Arendt call
-        arendt_calls = [c for c in calls if "Hannah Arendt" in (c.kwargs.get("system", "") or "")]
+        arendt_calls = [c for c in tracker.calls if "Hannah Arendt" in c["system_prompt"]]
         assert len(arendt_calls) == 1
-        arendt_prompt = arendt_calls[0].kwargs["messages"][0]["content"]
+        arendt_prompt = arendt_calls[0]["process"].stdin_text
         assert "Marx editorial output" in arendt_prompt
         assert "Hegel editorial output" in arendt_prompt
 
@@ -218,17 +231,16 @@ class TestRound2FullOutput:
             "Sherlock Holmes": "Holmes deductive evidence with specific anomalies",
             "Lupin": "Lupin contrarian inversion with supporting evidence",
         }
-        client = make_mock_client(response_map=response_map)
-        engine = DeliberationEngine(client, config, personas)
-
-        await engine.run("Test question", "balanced")
+        tracker = make_mock_subprocess(response_map=response_map)
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
         # Calls 6-10 are Round 2 (calls 1-5 are Round 1)
-        calls = client.messages.stream.call_args_list
-        round2_calls = calls[5:10]  # 5 Round 2 calls after 5 Round 1 calls
+        round2_calls = tracker.calls[5:10]
 
         for call in round2_calls:
-            prompt = call.kwargs["messages"][0]["content"]
+            prompt = call["process"].stdin_text
             assert "THIS IS ROUND 2" in prompt
             # Full output should be present, not just 1-2 sentence summaries
             assert "Socrates full analysis with detailed challenges and questions" in prompt
@@ -238,15 +250,14 @@ class TestRound2FullOutput:
     async def test_round2_prompt_not_lossy(self, config: Config, personas: dict[str, Persona]) -> None:
         """Verify Round 2 does NOT use compressed summaries."""
         long_output = "A" * 500  # Simulate substantial output
-        client = make_mock_client(default=long_output)
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess(default=long_output)
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
-        await engine.run("Test question", "balanced")
-
-        calls = client.messages.stream.call_args_list
         # Check a Round 2 call has the full 500-char output
-        round2_call = calls[5]
-        prompt = round2_call.kwargs["messages"][0]["content"]
+        round2_call = tracker.calls[5]
+        prompt = round2_call["process"].stdin_text
         assert long_output in prompt
 
 
@@ -255,16 +266,16 @@ class TestEventEmission:
 
     @pytest.mark.asyncio
     async def test_event_order_quick_preset(self, config: Config, personas: dict[str, Persona]) -> None:
-        """Quick: deliberation_started → round(1) → 3 agents → editorial → 2 editors → done."""
+        """Quick: deliberation_started -> round(1) -> 3 agents -> editorial -> 2 editors -> done."""
         events: list[DeliberationEvent] = []
 
         async def collect_event(event: DeliberationEvent) -> None:
             events.append(event)
 
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas, on_event=collect_event)
-
-        await engine.run("Test question", "quick")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=collect_event)
+            await engine.run("Test question", "quick")
 
         event_types = [e.type for e in events]
 
@@ -288,34 +299,33 @@ class TestEventEmission:
         def sync_callback(event: DeliberationEvent) -> None:
             events.append(event.type)
 
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas, on_event=sync_callback)
-
-        await engine.run("Test question", "quick")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=sync_callback)
+            await engine.run("Test question", "quick")
 
         assert "deliberation_started" in events
         assert "deliberation_completed" in events
 
 
 class TestStreamingCallback:
-    """AC-5: Streaming text callback."""
+    """AC-5: Text callback."""
 
     @pytest.mark.asyncio
-    async def test_text_callback_receives_chunks(self, config: Config, personas: dict[str, Persona]) -> None:
-        """on_text receives incremental text chunks."""
+    async def test_text_callback_receives_output(self, config: Config, personas: dict[str, Persona]) -> None:
+        """on_text receives agent output."""
         text_chunks: list[tuple[str, str]] = []
 
         async def on_text(agent_name: str, text: str) -> None:
             text_chunks.append((agent_name, text))
 
-        client = make_mock_client(default="Hello world from agent")
-        engine = DeliberationEngine(client, config, personas, on_text=on_text)
+        tracker = make_mock_subprocess(default="Hello world from agent")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_text=on_text)
+            await engine.run("Test question", "quick")
 
-        await engine.run("Test question", "quick")
-
-        # Should have received multiple chunks from multiple agents
+        # Should have received output from multiple agents
         assert len(text_chunks) > 0
-        # Check we got chunks from different agents
         agent_names = {name for name, _ in text_chunks}
         assert len(agent_names) > 1
 
@@ -331,15 +341,14 @@ class TestSamenvatterReceivesEverything:
             "Georg Hegel": "Hegel dialectical synthesis",
             "Hannah Arendt": "Arendt mechanism discovery",
         }
-        client = make_mock_client(response_map=response_map)
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess(response_map=response_map)
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
-        await engine.run("Test question", "balanced")
-
-        calls = client.messages.stream.call_args_list
         # Samenvatter is the last call
-        samenvatter_call = calls[-1]
-        prompt = samenvatter_call.kwargs["messages"][0]["content"]
+        samenvatter_call = tracker.calls[-1]
+        prompt = samenvatter_call["process"].stdin_text
 
         # Should contain analyst output (from compiled rounds)
         assert "Round 1" in prompt
@@ -355,10 +364,10 @@ class TestDefaultPreset:
 
     @pytest.mark.asyncio
     async def test_uses_default_from_config(self, config: Config, personas: dict[str, Persona]) -> None:
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Test question")  # No preset specified
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test question")  # No preset specified
 
         assert result.preset.name == "balanced"  # default_preset in config.yaml
 
@@ -369,63 +378,60 @@ class TestCodeContext:
     @pytest.mark.asyncio
     async def test_code_context_in_analyst_prompt(self, config: Config, personas: dict[str, Persona]) -> None:
         """When code_context is provided, analyst prompts contain CODE UNDER REVIEW."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Review this code", "quick", code_context="def foo(): pass")
 
-        await engine.run("Review this code", "quick", code_context="def foo(): pass")
-
-        calls = client.messages.stream.call_args_list
         # First 3 calls are analysts
-        for call in calls[:3]:
-            prompt = call.kwargs["messages"][0]["content"]
+        for call in tracker.calls[:3]:
+            prompt = call["process"].stdin_text
             assert "CODE UNDER REVIEW" in prompt
             assert "def foo(): pass" in prompt
 
     @pytest.mark.asyncio
     async def test_code_context_in_editor_prompt(self, config: Config, personas: dict[str, Persona]) -> None:
         """When code_context is provided, editor prompts contain CODE UNDER REVIEW."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Review this code", "quick", code_context="def bar(): pass")
 
-        await engine.run("Review this code", "quick", code_context="def bar(): pass")
-
-        calls = client.messages.stream.call_args_list
         # Last 2 calls are editors (marx + samenvatter) in quick preset
-        for call in calls[3:]:
-            prompt = call.kwargs["messages"][0]["content"]
+        for call in tracker.calls[3:]:
+            prompt = call["process"].stdin_text
             assert "CODE UNDER REVIEW" in prompt
             assert "def bar(): pass" in prompt
 
     @pytest.mark.asyncio
     async def test_no_code_context_means_no_section(self, config: Config, personas: dict[str, Persona]) -> None:
         """When code_context is None, prompts do NOT contain CODE UNDER REVIEW."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("General question", "quick")
 
-        await engine.run("General question", "quick")
-
-        calls = client.messages.stream.call_args_list
-        for call in calls:
-            prompt = call.kwargs["messages"][0]["content"]
+        for call in tracker.calls:
+            prompt = call["process"].stdin_text
             assert "CODE UNDER REVIEW" not in prompt
 
     @pytest.mark.asyncio
     async def test_code_context_stored_in_result(self, config: Config, personas: dict[str, Persona]) -> None:
         """code_context is stored on DeliberationResult."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Review", "quick", code_context="some code")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Review", "quick", code_context="some code")
 
         assert result.code_context == "some code"
 
     @pytest.mark.asyncio
     async def test_none_code_context_on_result(self, config: Config, personas: dict[str, Persona]) -> None:
         """code_context is None when not provided."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Question", "quick")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Question", "quick")
 
         assert result.code_context is None
 
@@ -436,7 +442,6 @@ class TestMissingPersonaWarning:
     @pytest.mark.asyncio
     async def test_warns_on_missing_analyst(self, config: Config, personas: dict[str, Persona], caplog: pytest.LogCaptureFixture) -> None:
         """Missing analyst triggers a warning log."""
-        # Use a preset with a nonexistent analyst
         mini_config = Config(
             default_preset="test",
             rounds=1,
@@ -449,11 +454,11 @@ class TestMissingPersonaWarning:
                 ),
             },
         )
-        client = make_mock_client()
-        engine = DeliberationEngine(client, mini_config, personas)
-
-        with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
-            result = await engine.run("Test", "test")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(mini_config, personas)
+            with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
+                result = await engine.run("Test", "test")
 
         assert "ghost-analyst" in caplog.text
         # Deliberation should still complete
@@ -475,11 +480,11 @@ class TestMissingPersonaWarning:
                 ),
             },
         )
-        client = make_mock_client()
-        engine = DeliberationEngine(client, mini_config, personas)
-
-        with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
-            await engine.run("Test", "test")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(mini_config, personas)
+            with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
+                await engine.run("Test", "test")
 
         assert "ghost-editor" in caplog.text
 
@@ -492,10 +497,10 @@ class TestSummarizerConfig:
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
         """When preset.summarizer matches an editor, output goes to samenvatter_output."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Test", "quick")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test", "quick")
 
         # quick preset has summarizer=samenvatter
         assert result.samenvatter_output is not None
@@ -519,10 +524,10 @@ class TestSummarizerConfig:
                 ),
             },
         )
-        client = make_mock_client()
-        engine = DeliberationEngine(client, no_summarizer_config, personas)
-
-        result = await engine.run("Test", "test")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(no_summarizer_config, personas)
+            result = await engine.run("Test", "test")
 
         assert result.samenvatter_output is None
         assert "marx" in result.editor_outputs
@@ -533,10 +538,10 @@ class TestSummarizerConfig:
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
         """Code presets have no summarizer — code-synthesizer goes to editor_outputs."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Review code", "code_quick")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Review code", "code_quick")
 
         assert result.samenvatter_output is None
         assert "code-synthesizer" in result.editor_outputs
@@ -547,27 +552,31 @@ class TestAgentErrorHandling:
 
     @pytest.mark.asyncio
     async def test_failed_agent_returns_error_string(self, config: Config, personas: dict[str, Persona]) -> None:
-        """A failing API call returns an error message string, not an exception."""
+        """A failing subprocess returns an error message string, not an exception."""
         call_count = 0
 
-        def failing_stream(**kwargs):
+        def failing_exec(*args: str, **kwargs: object) -> MockProcess:
             nonlocal call_count
             call_count += 1
-            system = kwargs.get("system", "")
-            # Make the first analyst (Occam) fail
-            if "Willem van Occam" in system:
-                raise RuntimeError("API connection timeout")
-            return MockStream(f"Success #{call_count}")
+            args_list = list(args)
+            system_prompt = ""
+            if "--system-prompt" in args_list:
+                idx = args_list.index("--system-prompt")
+                if idx + 1 < len(args_list):
+                    system_prompt = str(args_list[idx + 1])
+            # Make Occam fail
+            if "Willem van Occam" in system_prompt:
+                proc = MockProcess("", returncode=1)
+                proc._stderr = b"API error"
+                return proc
+            return MockProcess(f"Success #{call_count}")
 
-        client = AsyncMock()
-        client.messages.stream = MagicMock(side_effect=failing_stream)
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Test", "quick")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=failing_exec)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test", "quick")
 
         # Occam should have error message
         assert "[Agent fout:" in result.rounds[1]["occam"]
-        assert "RuntimeError" in result.rounds[1]["occam"]
         # Other analysts should have succeeded
         assert result.rounds[1]["holmes"] != ""
         assert "[Agent fout:" not in result.rounds[1]["holmes"]
@@ -576,21 +585,22 @@ class TestAgentErrorHandling:
     @pytest.mark.asyncio
     async def test_deliberation_completes_despite_failure(self, config: Config, personas: dict[str, Persona]) -> None:
         """Editors still run even if an analyst fails."""
-        call_count = 0
+        def failing_exec(*args: str, **kwargs: object) -> MockProcess:
+            args_list = list(args)
+            system_prompt = ""
+            if "--system-prompt" in args_list:
+                idx = args_list.index("--system-prompt")
+                if idx + 1 < len(args_list):
+                    system_prompt = str(args_list[idx + 1])
+            if "Willem van Occam" in system_prompt:
+                proc = MockProcess("", returncode=1)
+                proc._stderr = b"Simulated failure"
+                return proc
+            return MockProcess("Output")
 
-        def failing_stream(**kwargs):
-            nonlocal call_count
-            call_count += 1
-            system = kwargs.get("system", "")
-            if "Willem van Occam" in system:
-                raise RuntimeError("Simulated failure")
-            return MockStream(f"Output #{call_count}")
-
-        client = AsyncMock()
-        client.messages.stream = MagicMock(side_effect=failing_stream)
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Test", "quick")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=failing_exec)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test", "quick")
 
         # Editors should still have run
         assert "marx" in result.editor_outputs
@@ -599,40 +609,122 @@ class TestAgentErrorHandling:
     @pytest.mark.asyncio
     async def test_error_message_reaches_editors(self, config: Config, personas: dict[str, Persona]) -> None:
         """The error message from a failed agent is visible to editors."""
-        def failing_stream(**kwargs):
-            system = kwargs.get("system", "")
-            if "Willem van Occam" in system:
-                raise RuntimeError("Simulated failure")
-            return MockStream("Normal output")
+        tracker = make_mock_subprocess()
+        call_list: list[dict] = tracker.calls
 
-        client = AsyncMock()
-        client.messages.stream = MagicMock(side_effect=failing_stream)
-        engine = DeliberationEngine(client, config, personas)
+        def failing_exec(*args: str, **kwargs: object) -> MockProcess:
+            args_list = list(args)
+            system_prompt = ""
+            if "--system-prompt" in args_list:
+                idx = args_list.index("--system-prompt")
+                if idx + 1 < len(args_list):
+                    system_prompt = str(args_list[idx + 1])
+            if "Willem van Occam" in system_prompt:
+                proc = MockProcess("", returncode=1)
+                proc._stderr = b"Simulated failure"
+                call_list.append({"system_prompt": system_prompt, "process": proc})
+                return proc
+            proc = MockProcess("Normal output")
+            call_list.append({"system_prompt": system_prompt, "process": proc})
+            return proc
 
-        await engine.run("Test", "quick")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=failing_exec)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test", "quick")
 
         # Check that the editor (marx) received the error in compiled output
-        calls = client.messages.stream.call_args_list
-        marx_calls = [c for c in calls if "Karl Marx" in (c.kwargs.get("system", "") or "")]
+        marx_calls = [c for c in call_list if "Karl Marx" in c["system_prompt"]]
         assert len(marx_calls) == 1
-        marx_prompt = marx_calls[0].kwargs["messages"][0]["content"]
+        marx_prompt = marx_calls[0]["process"].stdin_text
         assert "[Agent fout:" in marx_prompt
 
     @pytest.mark.asyncio
     async def test_logs_error_on_failure(self, config: Config, personas: dict[str, Persona], caplog: pytest.LogCaptureFixture) -> None:
         """Failed agent triggers an error log."""
-        def failing_stream(**kwargs):
-            system = kwargs.get("system", "")
-            if "Willem van Occam" in system:
-                raise RuntimeError("Connection refused")
-            return MockStream("OK")
+        def failing_exec(*args: str, **kwargs: object) -> MockProcess:
+            args_list = list(args)
+            system_prompt = ""
+            if "--system-prompt" in args_list:
+                idx = args_list.index("--system-prompt")
+                if idx + 1 < len(args_list):
+                    system_prompt = str(args_list[idx + 1])
+            if "Willem van Occam" in system_prompt:
+                proc = MockProcess("", returncode=1)
+                proc._stderr = b"Connection refused"
+                return proc
+            return MockProcess("OK")
 
-        client = AsyncMock()
-        client.messages.stream = MagicMock(side_effect=failing_stream)
-        engine = DeliberationEngine(client, config, personas)
-
-        with caplog.at_level(logging.ERROR, logger="deliberators.engine"):
-            await engine.run("Test", "quick")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=failing_exec)):
+            engine = DeliberationEngine(config, personas)
+            with caplog.at_level(logging.ERROR, logger="deliberators.engine"):
+                await engine.run("Test", "quick")
 
         assert "Willem van Occam" in caplog.text
         assert "Connection refused" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_exception_in_subprocess_call(self, config: Config, personas: dict[str, Persona]) -> None:
+        """An exception during subprocess creation is caught gracefully."""
+        call_count = 0
+
+        def exception_exec(*args: str, **kwargs: object) -> MockProcess:
+            nonlocal call_count
+            call_count += 1
+            args_list = list(args)
+            system_prompt = ""
+            if "--system-prompt" in args_list:
+                idx = args_list.index("--system-prompt")
+                if idx + 1 < len(args_list):
+                    system_prompt = str(args_list[idx + 1])
+            if "Willem van Occam" in system_prompt:
+                raise FileNotFoundError("claude not found")
+            return MockProcess(f"Success #{call_count}")
+
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=exception_exec)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test", "quick")
+
+        assert "[Agent fout:" in result.rounds[1]["occam"]
+        assert "FileNotFoundError" in result.rounds[1]["occam"]
+
+
+class TestSubprocessArgs:
+    """Verify correct arguments are passed to claude -p."""
+
+    @pytest.mark.asyncio
+    async def test_model_passed_from_config(self, config: Config, personas: dict[str, Persona]) -> None:
+        """The --model flag matches config.model."""
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test", "quick")
+
+        for call in tracker.calls:
+            args = list(call["args"])
+            assert "--model" in args
+            model_idx = args.index("--model")
+            assert args[model_idx + 1] == config.model
+
+    @pytest.mark.asyncio
+    async def test_system_prompt_from_persona(self, config: Config, personas: dict[str, Persona]) -> None:
+        """The --system-prompt flag contains the persona's system_prompt."""
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test", "quick")
+
+        # First call should be an analyst with a FORBIDDEN constraint
+        first_system = tracker.get_system_prompt(0)
+        assert "FORBIDDEN" in first_system or "MUST NOT" in first_system
+
+    @pytest.mark.asyncio
+    async def test_prompt_sent_via_stdin(self, config: Config, personas: dict[str, Persona]) -> None:
+        """The user prompt is sent via stdin, not as a CLI argument."""
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("My test question", "quick")
+
+        for call in tracker.calls:
+            stdin_text = call["process"].stdin_text
+            assert "My test question" in stdin_text

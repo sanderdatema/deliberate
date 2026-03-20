@@ -7,6 +7,7 @@ They verify prompt construction, pipeline wiring, and output structure.
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -15,7 +16,7 @@ from deliberators.loader import ConfigLoader, PersonaLoader
 from deliberators.models import Config, DeliberationEvent, Persona
 
 # Reuse mock helpers from test_engine
-from tests.test_engine import make_mock_client
+from tests.test_engine import make_mock_subprocess
 
 PERSONAS_DIR = Path("personas")
 CONFIG_PATH = Path("config.yaml")
@@ -35,42 +36,40 @@ class TestPromptConstruction:
     """AC-4: Verify prompts are correctly constructed."""
 
     @pytest.mark.asyncio
-    async def test_system_prompt_passed_as_system_kwarg(
+    async def test_system_prompt_passed_as_cli_flag(
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
-        """Persona system_prompt goes in 'system' kwarg, not in messages."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        """Persona system_prompt goes in --system-prompt flag, not in stdin."""
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "quick")
 
-        await engine.run("Test question", "quick")
-
-        for call in client.messages.stream.call_args_list:
-            system = call.kwargs.get("system", "")
+        for call in tracker.calls:
+            system = call["system_prompt"]
             assert "FORBIDDEN" in system or "MUST NOT" in system, (
-                f"system kwarg should contain persona constraints, got: {system[:100]}"
+                f"--system-prompt should contain persona constraints, got: {system[:100]}"
             )
-            # Messages should NOT contain the system prompt
-            messages = call.kwargs.get("messages", [])
-            for msg in messages:
-                assert "FORMAT YOUR RESPONSE" not in msg.get("content", ""), (
-                    "system_prompt content leaked into messages"
-                )
+            # Stdin (user prompt) should NOT contain the system prompt's output format
+            stdin_text = call["process"].stdin_text
+            assert "FORMAT YOUR RESPONSE" not in stdin_text, (
+                "system_prompt content leaked into stdin prompt"
+            )
 
     @pytest.mark.asyncio
     async def test_round2_prompts_contain_round2_marker(
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
         """Round 2 prompts must contain 'THIS IS ROUND 2'."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
-        await engine.run("Test question", "balanced")
-
-        calls = client.messages.stream.call_args_list
         # Round 2 calls are 6-10 (after 5 Round 1 calls)
-        round2_calls = calls[5:10]
+        round2_calls = tracker.calls[5:10]
         for call in round2_calls:
-            content = call.kwargs["messages"][0]["content"]
+            content = call["process"].stdin_text
             assert "THIS IS ROUND 2" in content
 
     @pytest.mark.asyncio
@@ -78,15 +77,14 @@ class TestPromptConstruction:
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
         """Round 2 must include complete Round 1 output, not summaries."""
-        client = make_mock_client(default="Detailed analysis with evidence and reasoning")
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess(default="Detailed analysis with evidence and reasoning")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
-        await engine.run("Test question", "balanced")
-
-        calls = client.messages.stream.call_args_list
-        round2_calls = calls[5:10]
+        round2_calls = tracker.calls[5:10]
         for call in round2_calls:
-            content = call.kwargs["messages"][0]["content"]
+            content = call["process"].stdin_text
             assert "Detailed analysis with evidence and reasoning" in content
 
     @pytest.mark.asyncio
@@ -94,16 +92,15 @@ class TestPromptConstruction:
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
         """Editor prompts include analyst output from ALL rounds."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
-        await engine.run("Test question", "balanced")
-
-        calls = client.messages.stream.call_args_list
         # Editor calls are after 10 analyst calls (5+5)
-        editor_calls = calls[10:]
+        editor_calls = tracker.calls[10:]
         for call in editor_calls:
-            content = call.kwargs["messages"][0]["content"]
+            content = call["process"].stdin_text
             assert "Round 1" in content
             assert "Round 2" in content
 
@@ -117,14 +114,13 @@ class TestPromptConstruction:
             "Georg Hegel": "Hegel: dialectical synthesis found",
             "Hannah Arendt": "Arendt: mechanisms exposed",
         }
-        client = make_mock_client(response_map=response_map)
-        engine = DeliberationEngine(client, config, personas)
+        tracker = make_mock_subprocess(response_map=response_map)
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "balanced")
 
-        await engine.run("Test question", "balanced")
-
-        calls = client.messages.stream.call_args_list
-        samenvatter_call = calls[-1]
-        content = samenvatter_call.kwargs["messages"][0]["content"]
+        samenvatter_call = tracker.calls[-1]
+        content = samenvatter_call["process"].stdin_text
         assert "Marx: shared blind spots identified" in content
         assert "Hegel: dialectical synthesis found" in content
         assert "Arendt: mechanisms exposed" in content
@@ -138,11 +134,11 @@ class TestPipelineWiring:
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
         """Every analyst listed in the preset produces output."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-        preset = ConfigLoader.get_preset(config, "balanced")
-
-        result = await engine.run("Test question", "balanced")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            preset = ConfigLoader.get_preset(config, "balanced")
+            result = await engine.run("Test question", "balanced")
 
         for analyst in preset.analysts:
             assert analyst in result.rounds[1], f"Missing analyst {analyst} in round 1"
@@ -153,11 +149,11 @@ class TestPipelineWiring:
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
         """Every editor (except samenvatter) appears in editor_outputs."""
-        client = make_mock_client()
-        engine = DeliberationEngine(client, config, personas)
-        preset = ConfigLoader.get_preset(config, "balanced")
-
-        result = await engine.run("Test question", "balanced")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            preset = ConfigLoader.get_preset(config, "balanced")
+            result = await engine.run("Test question", "balanced")
 
         for editor in preset.editors:
             if editor == "samenvatter":
@@ -171,12 +167,12 @@ class TestPipelineWiring:
     ) -> None:
         """Event sequence follows correct structural pattern."""
         events: list[DeliberationEvent] = []
-        client = make_mock_client()
-        engine = DeliberationEngine(
-            client, config, personas, on_event=lambda e: events.append(e)
-        )
-
-        await engine.run("Test question", "balanced")
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(
+                config, personas, on_event=lambda e: events.append(e)
+            )
+            await engine.run("Test question", "balanced")
 
         types = [e.type for e in events]
 
@@ -202,10 +198,10 @@ class TestPipelineWiring:
         self, config: Config, personas: dict[str, Persona]
     ) -> None:
         """No analyst or editor output should be empty."""
-        client = make_mock_client(default="Substantive output")
-        engine = DeliberationEngine(client, config, personas)
-
-        result = await engine.run("Test question", "balanced")
+        tracker = make_mock_subprocess(default="Substantive output")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test question", "balanced")
 
         for round_num, round_data in result.rounds.items():
             for name, output in round_data.items():

@@ -52,14 +52,27 @@ Ask a maximum of 8 questions total. Most code reviews need 1-3 questions.
 
 **If the scope is clear enough:** Proceed to Step 1. Display: `Review scope helder. Code review wordt gestart.`
 
+## Step 0.5: Resolve Data Paths
+
+Before reading config or personas, resolve where they live. Run via Bash:
+```
+uv run python -c "from deliberators.loader import resolve_config_path, resolve_personas_dir; print(resolve_config_path()); print(resolve_personas_dir())"
+```
+
+Parse the two lines of output:
+- Line 1 = **CONFIG_PATH** (e.g., `config.yaml` or `/path/to/deliberators/data/config.yaml`)
+- Line 2 = **PERSONAS_DIR** (e.g., `personas` or `/path/to/deliberators/data/personas`)
+
+Use these resolved paths in all subsequent Read tool calls. If the command fails (deliberators not installed), fall back to `config.yaml` and `personas/` in CWD.
+
 ## Step 1: Load Configuration, Personas & Code
 
-1. Read `config.yaml` from the project root. Use the code preset:
+1. Read config from **CONFIG_PATH** (resolved in Step 0.5). Use the code preset:
    - `--preset quick` → code_quick (3 analysts + 1 editor, 1 round)
    - `--preset balanced` or default → code_balanced (5 analysts + 1 editor, 2 rounds)
    - `--preset deep` → code_deep (9 analysts + 1 editor, 2 rounds)
 
-2. Read only the persona YAML files listed in the selected code preset from `personas/` directory.
+2. Read only the persona YAML files listed in the selected code preset from **PERSONAS_DIR** (resolved in Step 0.5).
 
 3. **Read code files** specified via --files using the Read tool. For each file:
    - Read the full contents
@@ -79,7 +92,7 @@ Ask a maximum of 8 questions total. Most code reviews need 1-3 questions.
      ```
      ```
 
-4. **Custom persona support:** Same as /deliberate — check for extra .yaml files beyond the standard 25 personas (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, ibn-khaldun, marx, hegel, arendt, samenvatter, linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, christensen, hopper, code-synthesizer) and schema.yaml.
+4. **Custom persona support:** Same as /deliberate — check for extra .yaml files beyond the standard 25 personas in **PERSONAS_DIR** (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, ibn-khaldun, marx, hegel, arendt, samenvatter, linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, christensen, hopper, code-synthesizer) and schema.yaml.
 
 5. Display the configuration:
 ```

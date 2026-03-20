@@ -74,18 +74,31 @@ Ask a maximum of 12 questions total (one at a time, wait for each answer). After
 
 **IMPORTANT:** Do NOT fill in missing context with assumptions. If you don't know something, ASK. The whole point of the intake is to prevent the analysts from making up context that may be wrong.
 
+## Step 0.5: Resolve Data Paths
+
+Before reading config or personas, resolve where they live. Run via Bash:
+```
+uv run python -c "from deliberators.loader import resolve_config_path, resolve_personas_dir; print(resolve_config_path()); print(resolve_personas_dir())"
+```
+
+Parse the two lines of output:
+- Line 1 = **CONFIG_PATH** (e.g., `config.yaml` or `/path/to/deliberators/data/config.yaml`)
+- Line 2 = **PERSONAS_DIR** (e.g., `personas` or `/path/to/deliberators/data/personas`)
+
+Use these resolved paths in all subsequent Read tool calls. If the command fails (deliberators not installed), fall back to `config.yaml` and `personas/` in CWD.
+
 ## Step 1: Load Configuration & Personas
 
-1. Read `config.yaml` from the project root. It defines presets with analyst/editor lists and round counts.
+1. Read config from **CONFIG_PATH** (resolved in Step 0.5). It defines presets with analyst/editor lists and round counts.
 
 2. Based on the selected preset, determine:
    - Which analyst persona files to load (by filename without .yaml)
    - Which editor persona files to load
    - How many rounds to run
 
-3. Read only the YAML files listed in the preset from `personas/` directory.
+3. Read only the YAML files listed in the preset from **PERSONAS_DIR** (resolved in Step 0.5).
 
-4. **Custom persona support:** After loading preset personas, check if any additional .yaml files exist in `personas/` that are NOT in the standard 25 (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, ibn-khaldun, marx, hegel, arendt, samenvatter, linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, christensen, hopper, code-synthesizer) and NOT schema.yaml. If found, validate they have the required fields (name, role, system_prompt, forbidden) and add them as extra analysts or editors based on their role. Display: `Custom persona geladen: {name}`
+4. **Custom persona support:** After loading preset personas, check if any additional .yaml files exist in **PERSONAS_DIR** that are NOT in the standard 25 (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, ibn-khaldun, marx, hegel, arendt, samenvatter, linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, christensen, hopper, code-synthesizer) and NOT schema.yaml. If found, validate they have the required fields (name, role, system_prompt, forbidden) and add them as extra analysts or editors based on their role. Display: `Custom persona geladen: {name}`
 
 5. Display the configuration:
 ```
@@ -251,7 +264,7 @@ Respond in the same language as the question.
 
 After all editors are done, spawn ONE final agent: the Samenvatter. This agent reads the ENTIRE deliberation (all rounds + all editors + your meta-analysis) and distills it into a concrete, everyday-language summary that the user can directly act on.
 
-Load the samenvatter persona from `personas/samenvatter.yaml` and spawn with Agent tool (`model: "opus"`):
+Load the samenvatter persona from `{PERSONAS_DIR}/samenvatter.yaml` and spawn with Agent tool (`model: "opus"`):
 
 ```
 {samenvatter system_prompt}

@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from deliberators.engine import DeliberationEngine, DeliberationResult
-from deliberators.models import Config, DeliberationEvent, Persona, Preset
+from deliberators.engine import DeliberationEngine
+from deliberators.models import Config, DeliberationEvent, DeliberationResult, Persona, Preset
 
 
 def get_data_path() -> Path:

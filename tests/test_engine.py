@@ -9,7 +9,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from deliberators.engine import DeliberationEngine, DeliberationResult
+from deliberators.engine import DeliberationEngine
+from deliberators.models import DeliberationResult
 from deliberators.loader import ConfigLoader, PersonaLoader
 from deliberators.models import Config, DeliberationEvent, Persona, Preset
 
@@ -1046,18 +1047,18 @@ class TestIntakePhase:
             "IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: Clarified question about X",
         ])
 
-        original_functional = DeliberationEngine._call_functional_agent
+        original_functional = DeliberationEngine._subprocess_call
 
-        async def patched_functional(self_engine, system_prompt, prompt, model):
+        async def patched_functional(self_engine, system_prompt, prompt, model, name="functional"):
             # Only intercept intake calls (check for intake system prompt)
             if "intake analyst" in system_prompt.lower():
                 return next(responses, "IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: fallback")
-            return await original_functional(self_engine, system_prompt, prompt, model)
+            return await original_functional(self_engine, system_prompt, prompt, model, name)
 
         tracker = make_mock_subprocess()
         with (
             patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
-            patch.object(DeliberationEngine, "_call_functional_agent", patched_functional),
+            patch.object(DeliberationEngine, "_subprocess_call", patched_functional),
         ):
             engine = DeliberationEngine(config, personas, on_clarify=mock_clarify)
             result = await engine.run("Vague question", "quick")
@@ -1078,7 +1079,7 @@ class TestIntakePhase:
             return f"Answer {clarify_count}"
 
         # Always returns unclear
-        async def always_unclear(self_engine, system_prompt, prompt, model):
+        async def always_unclear(self_engine, system_prompt, prompt, model, name="functional"):
             if "intake analyst" in system_prompt.lower():
                 return "IS_CLEAR: no\nCLARIFICATION_QUESTION: Still unclear?\nBRIEF: Still ambiguous"
             return "Mock output"
@@ -1086,7 +1087,7 @@ class TestIntakePhase:
         tracker = make_mock_subprocess()
         with (
             patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
-            patch.object(DeliberationEngine, "_call_functional_agent", always_unclear),
+            patch.object(DeliberationEngine, "_subprocess_call", always_unclear),
         ):
             engine = DeliberationEngine(config, personas, on_clarify=mock_clarify)
             result = await engine.run("Perpetually vague", "quick")
@@ -1225,7 +1226,7 @@ class TestConvergencePhase:
             },
         )
 
-        async def stop_convergence(self_engine, system_prompt, prompt, model):
+        async def stop_convergence(self_engine, system_prompt, prompt, model, name="functional"):
             if "convergence analyst" in system_prompt.lower():
                 return "CONTINUE: no\nREASON: All positions have converged"
             return "Mock output"
@@ -1233,7 +1234,7 @@ class TestConvergencePhase:
         tracker = make_mock_subprocess()
         with (
             patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
-            patch.object(DeliberationEngine, "_call_functional_agent", stop_convergence),
+            patch.object(DeliberationEngine, "_subprocess_call", stop_convergence),
         ):
             engine = DeliberationEngine(mini_config, personas)
             result = await engine.run("Test", "test")
@@ -1259,7 +1260,7 @@ class TestConvergencePhase:
             },
         )
 
-        async def always_continue(self_engine, system_prompt, prompt, model):
+        async def always_continue(self_engine, system_prompt, prompt, model, name="functional"):
             if "convergence analyst" in system_prompt.lower():
                 return "CONTINUE: yes\nREASON: Still diverging"
             return "Mock output"
@@ -1267,7 +1268,7 @@ class TestConvergencePhase:
         tracker = make_mock_subprocess()
         with (
             patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
-            patch.object(DeliberationEngine, "_call_functional_agent", always_continue),
+            patch.object(DeliberationEngine, "_subprocess_call", always_continue),
         ):
             engine = DeliberationEngine(mini_config, personas)
             result = await engine.run("Test", "test")
@@ -1380,7 +1381,7 @@ class TestTeamSelection:
             },
         )
 
-        async def mock_functional(self_engine, system_prompt, prompt, model):
+        async def mock_functional(self_engine, system_prompt, prompt, model, name="functional"):
             if "team selection" in system_prompt.lower():
                 return "ANALYSTS: socrates, occam\nEDITORS: samenvatter\nREASON: Best fit"
             if "intake analyst" in system_prompt.lower():
@@ -1392,7 +1393,7 @@ class TestTeamSelection:
         tracker = make_mock_subprocess()
         with (
             patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
-            patch.object(DeliberationEngine, "_call_functional_agent", mock_functional),
+            patch.object(DeliberationEngine, "_subprocess_call", mock_functional),
         ):
             engine = DeliberationEngine(dynamic_config, personas)
             result = await engine.run("What is justice?", "test")
@@ -1438,7 +1439,7 @@ class TestTeamSelection:
         async def collect(event: DeliberationEvent) -> None:
             events.append(event)
 
-        async def mock_functional(self_engine, system_prompt, prompt, model):
+        async def mock_functional(self_engine, system_prompt, prompt, model, name="functional"):
             if "team selection" in system_prompt.lower():
                 return "ANALYSTS: socrates, occam\nEDITORS: samenvatter\nREASON: Best fit"
             if "intake analyst" in system_prompt.lower():
@@ -1448,7 +1449,7 @@ class TestTeamSelection:
         tracker = make_mock_subprocess()
         with (
             patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
-            patch.object(DeliberationEngine, "_call_functional_agent", mock_functional),
+            patch.object(DeliberationEngine, "_subprocess_call", mock_functional),
         ):
             engine = DeliberationEngine(dynamic_config, personas, on_event=collect)
             await engine.run("What is justice?", "test")
@@ -1476,7 +1477,7 @@ class TestTeamSelection:
         )
         received_prompts: list[str] = []
 
-        async def mock_functional(self_engine, system_prompt, prompt, model):
+        async def mock_functional(self_engine, system_prompt, prompt, model, name="functional"):
             if "team selection" in system_prompt.lower():
                 received_prompts.append(prompt)
                 return "ANALYSTS: linus, schneier\nEDITORS: code-synthesizer\nREASON: Code review"
@@ -1487,7 +1488,7 @@ class TestTeamSelection:
         tracker = make_mock_subprocess()
         with (
             patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
-            patch.object(DeliberationEngine, "_call_functional_agent", mock_functional),
+            patch.object(DeliberationEngine, "_subprocess_call", mock_functional),
         ):
             engine = DeliberationEngine(dynamic_config, personas)
             await engine.run("Review this", "test", code_context="def foo(): pass")

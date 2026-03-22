@@ -5,16 +5,15 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable
+from typing import Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
-import uuid
-from datetime import datetime, timezone
-
 from deliberators.loader import ConfigLoader, PersonaLoader
-from deliberators.models import Config, ConvergenceResult, DecisionRecord, DeliberationEvent, IntakeBrief, Persona, Preset
+from deliberators.models import (
+    Config, ConvergenceResult, DecisionRecord, DeliberationEvent, DeliberationResult,
+    IntakeBrief, Persona, Preset, to_decision_record,
+)
 
 EventCallback = Callable[[DeliberationEvent], Awaitable[None] | None]
 TextCallback = Callable[[str, str], Awaitable[None] | None]  # (agent_name, text_delta)
@@ -111,48 +110,6 @@ Output EXACTLY this structure (no other text before or after):
 CONTINUE: yes|no
 REASON: [1-2 sentences explaining your assessment]
 """
-
-
-@dataclass
-class DeliberationResult:
-    """Result of a complete deliberation run."""
-
-    question: str
-    preset: Preset
-    rounds: dict[int, dict[str, str]] = field(default_factory=dict)
-    editor_outputs: dict[str, str] = field(default_factory=dict)
-    samenvatter_output: str | None = None
-    code_context: str | None = None
-    intake_brief: IntakeBrief | None = None
-    synthesis_output: str | None = None
-
-
-def _condense_positions(rounds: dict[int, dict[str, str]]) -> dict[str, str]:
-    """Extract last-round output per analyst, truncated to ~200 chars."""
-    if not rounds:
-        return {}
-    last_round = rounds[max(rounds.keys())]
-    return {
-        name: output[:200].rsplit(" ", 1)[0] + ("..." if len(output) > 200 else "")
-        for name, output in last_round.items()
-    }
-
-
-def to_decision_record(
-    result: DeliberationResult, follow_up_of: str | None = None,
-) -> DecisionRecord:
-    """Build a DecisionRecord from a DeliberationResult."""
-    return DecisionRecord(
-        id=uuid.uuid4().hex,
-        timestamp=datetime.now(timezone.utc).isoformat(),
-        question=result.question,
-        preset_name=result.preset.name,
-        analysts=tuple(result.rounds[1].keys()) if 1 in result.rounds else (),
-        editors=tuple(result.editor_outputs.keys()),
-        summary=result.samenvatter_output or "",
-        key_positions=_condense_positions(result.rounds),
-        follow_up_of=follow_up_of,
-    )
 
 
 class DeliberationEngine:
@@ -312,49 +269,18 @@ class DeliberationEngine:
         if self._agent_fn:
             output = await self._agent_fn(persona, prompt)
         else:
-            output = await self._subprocess_call(persona, prompt)
+            output = await self._subprocess_call(
+                persona.system_prompt, prompt,
+                persona.model or self.config.model, persona.name,
+            )
         if self.on_text:
             await _maybe_await(self.on_text(persona.name, output))
         return output
 
-    async def _subprocess_call(self, persona: Persona, prompt: str) -> str:
-        """Default agent implementation: call claude -p subprocess with timeout."""
-        model = persona.model or self.config.model
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                "claude", "-p",
-                "--model", model,
-                "--system-prompt", persona.system_prompt,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(input=prompt.encode()),
-                timeout=self.config.timeout,
-            )
-
-            if proc.returncode != 0:
-                error_msg = stderr.decode().strip()
-                logger.error("Agent '%s' failed (exit %d): %s", persona.name, proc.returncode, error_msg)
-                return f"[Agent fout: {persona.name} — exit code {proc.returncode}]"
-
-            return stdout.decode()
-        except asyncio.TimeoutError:
-            logger.error("Agent '%s' timed out after %ds", persona.name, self.config.timeout)
-            try:
-                proc.kill()
-            except ProcessLookupError:
-                pass
-            return f"[Agent fout: {persona.name} — timeout na {self.config.timeout}s]"
-        except Exception as e:
-            logger.error("Agent '%s' failed: %s", persona.name, e)
-            return f"[Agent fout: {persona.name} — {type(e).__name__}: {e}]"
-
-    async def _call_functional_agent(
-        self, system_prompt: str, prompt: str, model: str,
+    async def _subprocess_call(
+        self, system_prompt: str, prompt: str, model: str, name: str = "functional",
     ) -> str:
-        """Call a functional agent (no Persona) via subprocess."""
+        """Call claude -p subprocess with timeout. Used by both persona and functional agents."""
         try:
             proc = await asyncio.create_subprocess_exec(
                 "claude", "-p",
@@ -371,20 +297,20 @@ class DeliberationEngine:
 
             if proc.returncode != 0:
                 error_msg = stderr.decode().strip()
-                logger.error("Functional agent failed (exit %d): %s", proc.returncode, error_msg)
-                return ""
+                logger.error("Agent '%s' failed (exit %d): %s", name, proc.returncode, error_msg)
+                return f"[Agent fout: {name} — exit code {proc.returncode}]"
 
             return stdout.decode()
         except asyncio.TimeoutError:
-            logger.error("Functional agent timed out after %ds", self.config.timeout)
+            logger.error("Agent '%s' timed out after %ds", name, self.config.timeout)
             try:
                 proc.kill()
             except ProcessLookupError:
                 pass
-            return ""
+            return f"[Agent fout: {name} — timeout na {self.config.timeout}s]"
         except Exception as e:
-            logger.error("Functional agent failed: %s", e)
-            return ""
+            logger.error("Agent '%s' failed: %s", name, e)
+            return f"[Agent fout: {name} — {type(e).__name__}: {e}]"
 
     @staticmethod
     def _parse_intake_output(output: str) -> dict[str, str]:
@@ -419,7 +345,7 @@ class DeliberationEngine:
         parsed: dict[str, str] = {"is_clear": "yes", "brief": question, "clarification_question": "none"}
 
         for iteration in range(_MAX_CLARIFICATION_ROUNDS):
-            output = await self._call_functional_agent(
+            output = await self._subprocess_call(
                 _INTAKE_SYSTEM_PROMPT, current_prompt, self.config.model,
             )
             parsed = self._parse_intake_output(output)
@@ -542,7 +468,7 @@ class DeliberationEngine:
 
         prompt = "\n\n".join(prompt_parts)
 
-        output = await self._call_functional_agent(
+        output = await self._subprocess_call(
             _TEAM_SELECTION_SYSTEM_PROMPT, prompt, self.config.model,
         )
 
@@ -614,7 +540,7 @@ class DeliberationEngine:
         )
         prompt = "\n\n".join(prompt_parts)
 
-        output = await self._call_functional_agent(
+        output = await self._subprocess_call(
             _CONVERGENCE_SYSTEM_PROMPT, prompt, self.config.model,
         )
         parsed = self._parse_convergence_output(output)
@@ -659,7 +585,7 @@ class DeliberationEngine:
             parts.append(f"SAMENVATTER:\n{samenvatter_output}")
 
         prompt = "\n\n".join(parts)
-        output = await self._call_functional_agent(
+        output = await self._subprocess_call(
             _SYNTHESIS_SYSTEM_PROMPT, prompt, self.config.model,
         )
         return output

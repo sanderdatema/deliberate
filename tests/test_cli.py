@@ -12,10 +12,9 @@ import pytest
 
 from deliberators.__main__ import build_parser
 from deliberators.web_pusher import WebPusher
-from deliberators.engine import DeliberationResult
 from deliberators.formatter import ResultFormatter
 from deliberators.loader import PersonaLoader
-from deliberators.models import DeliberationEvent, Persona, Preset
+from deliberators.models import DeliberationEvent, DeliberationResult, Persona, Preset
 
 PERSONAS_DIR = Path("personas")
 

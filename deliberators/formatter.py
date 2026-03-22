@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from deliberators.engine import DeliberationResult
-from deliberators.models import Persona
+from deliberators.models import DeliberationResult, Persona
 
 
 class ResultFormatter:

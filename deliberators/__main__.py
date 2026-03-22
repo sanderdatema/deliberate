@@ -8,7 +8,8 @@ import sys
 from pathlib import Path
 
 from deliberators.context import build_code_context
-from deliberators.engine import DeliberationEngine, to_decision_record
+from deliberators.engine import DeliberationEngine
+from deliberators.models import to_decision_record
 from deliberators.formatter import ResultFormatter
 from deliberators.loader import ConfigLoader, PersonaLoader, resolve_config_path, resolve_personas_dir
 from deliberators.models import DeliberationEvent

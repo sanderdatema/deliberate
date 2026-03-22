@@ -105,9 +105,11 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 
 ### Active (v0.6 — remaining)
 
-- [ ] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt
-- [ ] DecisionMemory: JSON opslag van deliberaties, --history/--followup CLI flags
-- [ ] ThematicFormatter: thematische rapportage i.p.v. per-persona output
+- [ ] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt (Phase 18)
+- [ ] Gender Diversity: pool uitbreiden met Joan Clarke, Margaret Hamilton, Barbara Liskov, Ada Lovelace, Hedy Lamarr, Alan Turing + Lupin terug (Phase 19)
+- [ ] Dynamic Team Selection: intake als teamsamensteller, /deliberate-code merged in /deliberate, cross-domein teams (Phase 20)
+- [ ] DecisionMemory: JSON opslag van deliberaties, --history/--followup CLI flags (Phase 21)
+- [ ] ThematicFormatter: thematische rapportage i.p.v. per-persona output (Phase 22)
 
 ### Out of Scope
 
@@ -182,4 +184,4 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 
 ---
 *Created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 17*
+*Last updated: 2026-03-22 after Phase 18 planning + roadmap expansion*

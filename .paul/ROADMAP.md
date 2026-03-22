@@ -122,17 +122,19 @@ Phases: 3 of 3 complete
 
 ### v0.6 Adaptive Deliberation
 Status: **In progress**
-Phases: 2 of 5 complete
+Phases: 2 of 7 complete
 
-Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model routing, intake fase, adaptive rounds met convergentie-detectie, decision memory, en thematische rapportage.
+Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model routing, intake fase, adaptive rounds, genderdiversiteit, dynamische teamselectie, decision memory, en thematische rapportage.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 16 | Persona & Model Routing | 1 | ✅ Complete | 2026-03-22 |
 | 17 | Intake Fase | 1 | ✅ Complete | 2026-03-22 |
-| 18 | Adaptive Rounds | 1 | Not started | |
-| 19 | Decision Memory | 1 | Not started | |
-| 20 | Rapportage Redesign | 1 | Not started | |
+| 18 | Adaptive Rounds | 1 | Planning | |
+| 19 | Gender Diversity | 1 | Not started | |
+| 20 | Dynamic Team Selection | 1 | Not started | |
+| 21 | Decision Memory | 1 | Not started | |
+| 22 | Rapportage Redesign | 1 | Not started | |
 
 ## Phase Details (v0.6)
 
@@ -143,20 +145,33 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 - [x] 17-01: IntakeBrief + _run_intake() + _call_functional_agent() + clarification callback + CLI integration (2026-03-22)
 
 ### Phase 18: Adaptive Rounds
-**Focus:** Convergentie-detectie vervangt vast aantal rondes. Functionele convergentie-agent evalueert na elke ronde of doorgaan waarde toevoegt.
+**Focus:** Convergentie-detectie vervangt vast aantal rondes. Functionele convergentie-agent evalueert na elke ronde of doorgaan waarde toevoegt. Preset `rounds` → `max_rounds` + `min_rounds`.
 
 **Depends on:** Phase 17 (intake-brief gaat mee in convergence context)
 
-### Phase 19: Decision Memory
+### Phase 19: Gender Diversity
+**Focus:** Persona pool uitbreiden met vrouwelijke denkers en Alan Turing. Lupin keert terug. Niemand gaat weg — de pool groeit.
+
+**Nieuwe code personas:** Joan Clarke (crypto/security), Margaret Hamilton (systems reliability), Barbara Liskov (architecture/abstractions), Ada Lovelace (algoritmisch denken), Hedy Lamarr (inventief denken), Alan Turing (formal correctness)
+**General:** Lupin terug als contrarian
+
+**Depends on:** Phase 16 (model routing — nieuwe personas krijgen model field)
+
+### Phase 20: Dynamic Team Selection
+**Focus:** Intake agent wordt teamsamensteller — analyseert vraag en selecteert optimaal team uit volledige pool. `/deliberate-code` verdwijnt, één unified `/deliberate` command. Presets worden pool-hints i.p.v. vaste lijsten. Cross-domein teams mogelijk (Jobs + Aristoteles, Clarke + Schneier).
+
+**Depends on:** Phase 19 (grotere pool), Phase 17 (intake-agent)
+
+### Phase 21: Decision Memory
 **Focus:** Structured JSON opslag van deliberaties. CLI flags voor history en follow-up.
 
 **Depends on:** Phase 16 (model routing)
 
-### Phase 20: Rapportage Redesign
+### Phase 22: Rapportage Redesign
 **Focus:** Thematische rapportage i.p.v. per-persona output. Geintegreerd document met landschap, spanningsveld, blinde vlekken, actiepunten.
 
-**Depends on:** Phase 18 (convergentie-info), Phase 19 (actiepunten-structuur)
+**Depends on:** Phase 18 (convergentie-info), Phase 21 (actiepunten-structuur)
 
 ---
 *Roadmap created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 17*
+*Last updated: 2026-03-22 after Phase 18 planning + roadmap expansion*

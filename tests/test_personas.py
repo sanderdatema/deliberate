@@ -12,6 +12,7 @@ SCHEMA_PATH = PERSONAS_DIR / "schema.yaml"
 REQUIRED_FIELDS = [
     "name",
     "model",
+    "domains",
     "role",
     "reasoning_style",
     "forbidden",
@@ -170,3 +171,18 @@ class TestPersonaFormat:
             assert "**Synthesis:**" in sp, f"{persona['_file']}: editor format must have Synthesis"
             assert "**Question Shifts:**" in sp, f"{persona['_file']}: editor format must have Question Shifts"
             assert "**Mechanisms:**" in sp, f"{persona['_file']}: editor format must have Mechanisms"
+
+    def test_domains_is_nonempty_list(self, persona):
+        domains = persona.get("domains", [])
+        assert isinstance(domains, list), f"{persona['_file']}: domains must be a list"
+        assert len(domains) >= 1, f"{persona['_file']}: domains must have >= 1 item"
+        for d in domains:
+            assert isinstance(d, str), f"{persona['_file']}: domain '{d}' must be a string"
+
+    def test_domains_are_snake_case(self, persona):
+        import re
+        domains = persona.get("domains", [])
+        for d in domains:
+            assert re.match(r'^[a-z][a-z0-9_]*$', d), (
+                f"{persona['_file']}: domain '{d}' must be lowercase_snake_case"
+            )

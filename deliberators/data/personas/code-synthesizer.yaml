@@ -1,5 +1,9 @@
 name: Code Synthesizer
 model: opus
+domains:
+  - code_synthesis
+  - actionable_output
+  - software_design
 role: editor
 reasoning_style: Code-review-synthese-editor — integreert alle analisten-perspectieven tot een geprioriteerde, actionable code review
 forbidden:

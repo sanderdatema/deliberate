@@ -10,6 +10,7 @@ class TestPersona:
         p = Persona(
             name="Test",
             model="opus",
+            domains=("testing", "quality"),
             role="analyst",
             reasoning_style="Test style",
             forbidden=("a", "b"),
@@ -25,6 +26,7 @@ class TestPersona:
         p = Persona(
             name="Editor",
             model="sonnet",
+            domains=("synthesis",),
             role="editor",
             reasoning_style="Editorial style",
             forbidden=("a", "b", "c"),
@@ -38,6 +40,7 @@ class TestPersona:
         p = Persona(
             name="Test",
             model="opus",
+            domains=("testing",),
             role="analyst",
             reasoning_style="",
             forbidden=("a", "b"),
@@ -47,6 +50,22 @@ class TestPersona:
         )
         with pytest.raises(AttributeError):
             p.name = "Changed"  # type: ignore[misc]
+
+    def test_domains_field(self):
+        p = Persona(
+            name="Test",
+            model="opus",
+            domains=("security", "cryptography", "threat_modeling"),
+            role="analyst",
+            reasoning_style="Test",
+            forbidden=("a", "b"),
+            focus="Test",
+            output_format={},
+            system_prompt="FORBIDDEN MUST NOT",
+        )
+        assert p.domains == ("security", "cryptography", "threat_modeling")
+        assert isinstance(p.domains, tuple)
+        assert len(p.domains) == 3
 
 
 class TestPreset:

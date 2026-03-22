@@ -86,6 +86,7 @@ class TestPersonaLoaderValidation:
     def test_missing_name_raises(self, tmp_path):
         path = self._write_yaml(tmp_path, {
             "model": "opus",
+            "domains": ["testing"],
             "role": "analyst",
             "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
             "forbidden": ["a", "b"],
@@ -97,6 +98,7 @@ class TestPersonaLoaderValidation:
         path = self._write_yaml(tmp_path, {
             "name": "Test",
             "model": "opus",
+            "domains": ["testing"],
             "role": "analyst",
             "forbidden": ["a", "b"],
         })
@@ -106,6 +108,7 @@ class TestPersonaLoaderValidation:
     def test_missing_model_raises(self, tmp_path):
         path = self._write_yaml(tmp_path, {
             "name": "Test",
+            "domains": ["testing"],
             "role": "analyst",
             "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
             "forbidden": ["a", "b"],
@@ -117,6 +120,7 @@ class TestPersonaLoaderValidation:
         path = self._write_yaml(tmp_path, {
             "name": "Test",
             "model": "haiku",
+            "domains": ["testing"],
             "role": "analyst",
             "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
             "forbidden": ["a", "b"],
@@ -128,6 +132,7 @@ class TestPersonaLoaderValidation:
         path = self._write_yaml(tmp_path, {
             "name": "Test",
             "model": "opus",
+            "domains": ["testing"],
             "role": "analyst",
             "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
             "forbidden": ["only one"],
@@ -139,6 +144,7 @@ class TestPersonaLoaderValidation:
         path = self._write_yaml(tmp_path, {
             "name": "Test",
             "model": "opus",
+            "domains": ["testing"],
             "role": "analyst",
             "system_prompt": "You are not allowed to do X. You MUST NOT Y.",
             "forbidden": ["a", "b"],
@@ -150,12 +156,52 @@ class TestPersonaLoaderValidation:
         path = self._write_yaml(tmp_path, {
             "name": "Test",
             "model": "opus",
+            "domains": ["testing"],
             "role": "analyst",
             "system_prompt": "You are FORBIDDEN from X. You should not Y.",
             "forbidden": ["a", "b"],
         })
         with pytest.raises(PersonaLoadError, match="MUST NOT"):
             PersonaLoader.load(path)
+
+    def test_missing_domains_raises(self, tmp_path):
+        path = self._write_yaml(tmp_path, {
+            "name": "Test",
+            "model": "opus",
+            "role": "analyst",
+            "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
+            "forbidden": ["a", "b"],
+        })
+        with pytest.raises(PersonaLoadError, match="missing required fields.*domains"):
+            PersonaLoader.load(path)
+
+    def test_empty_domains_raises(self, tmp_path):
+        path = self._write_yaml(tmp_path, {
+            "name": "Test",
+            "model": "opus",
+            "domains": [],
+            "role": "analyst",
+            "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
+            "forbidden": ["a", "b"],
+        })
+        with pytest.raises(PersonaLoadError, match="domains must be a non-empty list"):
+            PersonaLoader.load(path)
+
+    def test_domains_loaded_as_tuple(self, tmp_path):
+        path = self._write_yaml(tmp_path, {
+            "name": "Test",
+            "model": "opus",
+            "domains": ["security", "cryptography"],
+            "role": "analyst",
+            "reasoning_style": "Test style for validation",
+            "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
+            "forbidden": ["a", "b"],
+            "focus": "testing",
+            "output_format": {},
+        })
+        persona = PersonaLoader.load(path)
+        assert persona.domains == ("security", "cryptography")
+        assert isinstance(persona.domains, tuple)
 
 
 class TestPersonaLoaderAutodiscovery:
@@ -166,6 +212,7 @@ class TestPersonaLoaderAutodiscovery:
         valid_data = {
             "name": "Test Persona",
             "model": "opus",
+            "domains": ["testing"],
             "role": "analyst",
             "reasoning_style": "testing",
             "forbidden": ["a", "b"],
@@ -194,6 +241,7 @@ class TestPersonaLoaderAutodiscovery:
         valid_data = {
             "name": "New Persona",
             "model": "sonnet",
+            "domains": ["testing"],
             "role": "analyst",
             "reasoning_style": "new",
             "forbidden": ["a", "b"],

@@ -1,6 +1,7 @@
 required_fields:
   - name
   - model
+  - domains
   - role
   - reasoning_style
   - forbidden
@@ -28,6 +29,10 @@ editor_output_format:
   - synthesis
   - question_shifts
   - mechanisms
+
+domains_constraints:
+  min_items: 1
+  item_type: string
 
 constraints:
   min_forbidden_items: 2

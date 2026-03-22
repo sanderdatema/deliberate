@@ -12,6 +12,7 @@ class Persona:
 
     name: str
     model: str  # "opus" or "sonnet"
+    domains: tuple[str, ...]
     role: Literal["analyst", "editor"]
     reasoning_style: str
     forbidden: tuple[str, ...]

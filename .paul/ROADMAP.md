@@ -131,7 +131,7 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 | 16 | Persona & Model Routing | 1 | ✅ Complete | 2026-03-22 |
 | 17 | Intake Fase | 1 | ✅ Complete | 2026-03-22 |
 | 18 | Adaptive Rounds | 1 | Planning | |
-| 19 | Gender Diversity | 1 | Not started | |
+| 19 | Pool Expansion | 1 | Not started | |
 | 20 | Dynamic Team Selection | 1 | Not started | |
 | 21 | Decision Memory | 1 | Not started | |
 | 22 | Rapportage Redesign | 1 | Not started | |
@@ -149,18 +149,21 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 
 **Depends on:** Phase 17 (intake-brief gaat mee in convergence context)
 
-### Phase 19: Gender Diversity
-**Focus:** Persona pool uitbreiden met vrouwelijke denkers en Alan Turing. Lupin keert terug. Niemand gaat weg — de pool groeit.
+### Phase 19: Pool Expansion
+**Focus:** Persona pool uitbreiden naar breed expertpanel — niet beperkt tot "code" of "general" categorieën. Experts uit alle domeinen: technologie, politiek, wetenschap, kunst, communicatie, duurzaamheid, etc. Genderdiversiteit als harde eis. Persona YAML's krijgen `domains` veld voor expertise-matching. `role: analyst | editor` categorisering wordt heroverwogen. Niemand gaat weg — de pool groeit.
 
-**Nieuwe code personas:** Joan Clarke (crypto/security), Margaret Hamilton (systems reliability), Barbara Liskov (architecture/abstractions), Ada Lovelace (algoritmisch denken), Hedy Lamarr (inventief denken), Alan Turing (formal correctness)
-**General:** Lupin terug als contrarian
+**Nieuwe personas (minimaal):** Joan Clarke (cryptanalyse), Margaret Hamilton (systems reliability), Barbara Liskov (abstractions), Ada Lovelace (algoritmisch denken), Hedy Lamarr (inventief denken), Alan Turing (formal correctness), Lupin (terug als contrarian). Plus verdere expansie: denk aan Greta Thunberg (duurzaamheid/activisme), Thorbecke (governance/staatsrecht), Shakespeare (taal/storytelling), Ian McKellen (presentatie/communicatie), en meer.
+
+**Persona's moeten scherp omschreven zijn** — elk unieke expertise, duidelijke denkstijl, zodat intake agent effectief kan selecteren.
 
 **Depends on:** Phase 16 (model routing — nieuwe personas krijgen model field)
 
 ### Phase 20: Dynamic Team Selection
-**Focus:** Intake agent wordt teamsamensteller — analyseert vraag en selecteert optimaal team uit volledige pool. `/deliberate-code` verdwijnt, één unified `/deliberate` command. Presets worden pool-hints i.p.v. vaste lijsten. Cross-domein teams mogelijk (Jobs + Aristoteles, Clarke + Schneier).
+**Focus:** Intake agent wordt teamsamensteller — analyseert vraag en selecteert optimaal team uit volledige pool. `/deliberate-code` verdwijnt, één unified `/deliberate` command. Presets worden pool-hints i.p.v. vaste lijsten. Cross-domein teams mogelijk (Thunberg + Jobs bij duurzame productvisie, Clarke + Schneier bij security, Shakespeare + McKellen bij communicatie-strategie). Intake agent matcht op `domains` veld + vraaganalyse.
 
-**Depends on:** Phase 19 (grotere pool), Phase 17 (intake-agent)
+**Genderbalans als selectiecriterium:** Intake agent moet bij teamselectie actief letten op genderbalans — niet alleen de pool is divers, elk samengesteld team moet dat ook zijn.
+
+**Depends on:** Phase 19 (grotere, domein-getagde pool), Phase 17 (intake-agent)
 
 ### Phase 21: Decision Memory
 **Focus:** Structured JSON opslag van deliberaties. CLI flags voor history en follow-up.

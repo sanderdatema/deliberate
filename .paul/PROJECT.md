@@ -106,8 +106,8 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 ### Active (v0.6 — remaining)
 
 - [ ] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt (Phase 18)
-- [ ] Gender Diversity: pool uitbreiden met Joan Clarke, Margaret Hamilton, Barbara Liskov, Ada Lovelace, Hedy Lamarr, Alan Turing + Lupin terug (Phase 19)
-- [ ] Dynamic Team Selection: intake als teamsamensteller, /deliberate-code merged in /deliberate, cross-domein teams (Phase 20)
+- [ ] Pool Expansion: breed expertpanel — Clarke, Hamilton, Liskov, Lovelace, Lamarr, Turing, Lupin + Thunberg, Thorbecke, Shakespeare, McKellen, etc. Genderdiversiteit als harde eis. `domains` veld in persona YAML. (Phase 19)
+- [ ] Dynamic Team Selection: intake als teamsamensteller, /deliberate-code merged in /deliberate, cross-domein teams, matchen op expertise-domains (Phase 20)
 - [ ] DecisionMemory: JSON opslag van deliberaties, --history/--followup CLI flags (Phase 21)
 - [ ] ThematicFormatter: thematische rapportage i.p.v. per-persona output (Phase 22)
 

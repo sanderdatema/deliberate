@@ -106,7 +106,7 @@ Multi-perspectief code review met developer/designer personas (Linus Torvalds, K
 **Plans:**
 - [x] 07-01: 9 code analyst personas + 1 code editor + 3 code presets (2026-03-18)
 
-**Personas:** Linus Torvalds (code purist), Kent Beck (simplicity/TDD), Martin Fowler (architecture), Bruce Schneier (security), Steve Jobs (product vision), Don Norman (UX), Jony Ive (design craft), Clayton Christensen (user-fit/JTBD), Grace Hopper (pragmatism)
+**Personas:** Linus Torvalds (code purist), Kent Beck (simplicity/TDD), Martin Fowler (architecture), Bruce Schneier (security), Steve Jobs (product vision), Don Norman (UX), Jony Ive (UI/UX design), Donald Knuth (algorithmic performance), Grace Hopper (pragmatism)
 
 ### Phase 8: Code Context Pipeline ✓
 **Focus:** Pre-analysis step that reads codebase structure, key files, and patterns; feeds context to agents. Enable agents to use Read/Grep/Glob tools for code exploration during deliberation. Use Serena MCP for semantic code understanding.
@@ -227,13 +227,13 @@ Maak `deliberators` installeerbaar via `uv tool install` zodat `/deliberate` en 
 
 ### v0.6 Adaptive Deliberation
 Status: **In progress**
-Phases: 0 of 5 complete
+Phases: 1 of 5 complete
 
 Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model routing, intake fase, adaptive rounds met convergentie-detectie, decision memory, en thematische rapportage.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 16 | Persona & Model Routing | 1 | Planning | |
+| 16 | Persona & Model Routing | 1 | ✅ Complete | 2026-03-22 |
 | 17 | Intake Fase | 1 | Not started | |
 | 18 | Adaptive Rounds | 1 | Not started | |
 | 19 | Decision Memory | 1 | Not started | |
@@ -241,11 +241,11 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 
 ## Phase Details (v0.6)
 
-### Phase 16: Persona & Model Routing
+### Phase 16: Persona & Model Routing ✅
 **Focus:** Persona-wijzigingen (Lupin→Machiavelli, Christensen→Knuth, Ive→UI/UX) en per-persona model routing (Sonnet/Opus per YAML). Fundering voor alle volgende phases.
 
 **Plans:**
-- [ ] 16-01: Schema + models + loader + engine + persona swaps + model assignments
+- [x] 16-01: Schema + models + loader + engine + persona swaps + model assignments (2026-03-22)
 
 **Key deliverables:**
 - `model: opus|sonnet` veld in alle persona YAML's
@@ -253,8 +253,6 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 - Machiavelli (strategisch realist) vervangt Lupin
 - Knuth (performance/algorithmic) vervangt Christensen
 - Ive herdefinieerd naar UI/UX design reviewer
-
-**Depends on:** None (first phase of v0.6)
 
 ### Phase 17: Intake Fase
 **Focus:** Functionele intake-agent die vraag analyseert op helderheid, missende context, impliciete aannames. Produceert intake-brief die meegaat naar analysts.

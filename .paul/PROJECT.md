@@ -12,9 +12,9 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 
 | Attribute | Value |
 |-----------|-------|
-| Version | 0.5.0 |
-| Status | Globally installable: deliberation + code review + web viewer |
-| Last Updated | 2026-03-20 |
+| Version | 0.6.0-dev |
+| Status | Phase 16 complete — per-persona model routing live |
+| Last Updated | 2026-03-22 |
 
 ## Requirements
 
@@ -82,6 +82,24 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 - [x] Slash commands met dynamische pad-resolutie
 - [x] Global install via `uv tool install .`
 
+### Validated (Shipped — v0.6, Phase 16)
+
+- [x] Per-persona model routing: `model: opus|sonnet` in alle 25 persona YAML's
+- [x] Persona.model veld in frozen dataclass
+- [x] PersonaLoader valideert model tegen VALID_MODELS
+- [x] Engine gebruikt persona.model per subprocess call
+- [x] Machiavelli (strategisch realist) vervangt Lupin
+- [x] Knuth (algoritmische performance) vervangt Christensen
+- [x] Jony Ive herdefinieerd naar UI/UX reviewer (wat gebruikers zien)
+- [x] config.yaml presets bijgewerkt met nieuwe samenstelling
+
+### Active (v0.6 — remaining)
+
+- [ ] IntakeAgent: analyseert vraag op helderheid, produceert intake-brief
+- [ ] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt
+- [ ] DecisionMemory: JSON opslag van deliberaties, --history/--followup CLI flags
+- [ ] ThematicFormatter: thematische rapportage i.p.v. per-persona output
+
 ### Out of Scope
 
 - Persistente conversatie-geschiedenis — elke sessie is zelfstandig
@@ -127,6 +145,10 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 | Fuzzy logic scoring | Aslanders gewogen signalen benadering | 2026-03-18 | Active |
 | Python engine + Anthropic API | Programmatic access, events, web UI mogelijk | 2026-03-18 | Active |
 | Slash command als thin wrapper | Backward-compatible, engine doet het werk | 2026-03-18 | Active |
+| Per-persona model routing via YAML field | ~50% kostenbesparing op analyst-heavy presets zonder kwaliteitsverlies op synthese | 2026-03-22 | Active |
+| Jony Ive → UI/UX reviewer | UI/UX voor wat gebruikers zien was onderbelicht; Linus dekt code craft al | 2026-03-22 | Active |
+| Machiavelli vervangt Lupin | Sterkere karakter-functie fit: strategisch realist vs. Lupin's zwakke contrarian rol | 2026-03-22 | Active |
+| Config.model als fallback voor functionele agents | Intake/convergentie-agents hebben geen Persona object, hebben nog steeds model nodig | 2026-03-22 | Active |
 
 ## Tech Stack
 
@@ -149,4 +171,4 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 
 ---
 *Created: 2026-03-18*
-*Last updated: 2026-03-20 after Phase 15*
+*Last updated: 2026-03-22 after Phase 16*

@@ -2,18 +2,18 @@
 
 ## Project Reference
 
-See: .paul/PROJECT.md (updated 2026-03-20)
+See: .paul/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door multi-perspectief AI-debat
-**Current focus:** v0.6 Adaptive Deliberation — Phase 16 complete
+**Current focus:** v0.6 Adaptive Deliberation — Phase 17 next
 
 ## Current Position
 
 Milestone: v0.6 Adaptive Deliberation
-Phase: 16 of 20 (Persona & Model Routing) — Complete
-Plan: 16-01 executed
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-03-22 — Phase 16 APPLY complete, 590 tests pass
+Phase: 17 of 20 (Intake Fase) — Not started
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-03-22 — Phase 16 complete, UNIFY closed, transitioned to Phase 17
 
 Progress:
 - v0.1: [##########] 100%
@@ -21,14 +21,14 @@ Progress:
 - v0.3: [##########] 100%
 - v0.4: [##########] 100%
 - v0.5: [##########] 100%
-- v0.6: [##________] 20%
+- v0.6: [####______] 20% (1/5 phases)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN --> APPLY --> UNIFY
-  V        V        O     [APPLY complete, ready for UNIFY]
+  V        V        V     [Loop complete - ready for next PLAN]
 ```
 
 ## Accumulated Context
@@ -41,18 +41,24 @@ PLAN --> APPLY --> UNIFY
 - hatchling build backend, bundled data, fallback loader
 
 ### Decisions (v0.6)
-- Per-persona model routing: Sonnet/Opus per YAML veld
+- Per-persona model routing: Sonnet/Opus per YAML veld (Phase 16)
+- Config.model blijft als fallback voor functionele agents (intake, convergentie)
 - Lupin vervangen door Machiavelli (strategisch realist)
 - Christensen vervangen door Knuth (performance analyst)
-- Jony Ive herdefinieerd naar UI/UX design reviewer
+- Jony Ive herdefinieerd naar UI/UX design reviewer (wat gebruikers zien)
 - Intake-agent en convergentie-agent worden functioneel (geen persona YAML)
+
+### Git State
+Last commit: 08a50d6
+Branch: main
+Feature branches merged: none
 
 ## Session Continuity
 
 Last session: 2026-03-22
-Stopped at: Phase 16 APPLY complete
-Next action: /paul:unify to close loop, then Phase 17
-Resume file: .paul/phases/16-persona-model-routing/16-01-PLAN.md
+Stopped at: Phase 16 complete, UNIFY done, ready for Phase 17
+Next action: /paul:plan for Phase 17 (Intake Fase)
+Resume file: .paul/ROADMAP.md
 
 ---
 *STATE.md -- Updated after every significant action*

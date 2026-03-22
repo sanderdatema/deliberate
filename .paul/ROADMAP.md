@@ -165,6 +165,31 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 ### Phase 22: Rapportage Redesign ✅
 - [x] 22-01: Synthesis agent + thematic formatter + per-persona appendix (2026-03-22)
 
+### v0.7 Kwaliteit & Beknoptheid
+Status: **In Progress**
+Phases: 1 of 3 complete
+
+Gedreven door meta-deliberatie op eigen codebase: rapport output te lang, fragiele parsing, ontbrekende validatie, code duplicatie. Focus op kwaliteit en beknoptheid, niet op nieuwe features.
+
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 23 | Rapportage Inkorten | 1 | Complete | 2026-03-22 |
+| 24 | Robuustheid | TBD | Not started | - |
+| 25 | Refactoring | TBD | Not started | - |
+
+## Phase Details (v0.7)
+
+### Phase 23: Rapportage Inkorten ✅
+- [x] 23-01: Volledig Verslag achter --verbose, synthese-prompt beknopter, slash command compact (2026-03-22)
+
+### Phase 24: Robuustheid
+**Focus:** WebPusher resource leak fixen, lege decision_id guard, LLM output parsing robuuster maken (team-grootte validatie, parse-failure logging), schema-validatie afdwingen in PersonaLoader.
+**Plane:** DELIB-2, DELIB-3, DELIB-4, DELIB-5
+
+### Phase 25: Refactoring
+**Focus:** _call_agent en _call_functional_agent samenvoegen tot één methode. DeliberationResult verplaatsen van engine.py naar models.py.
+**Plane:** DELIB-6, DELIB-7
+
 ---
 *Roadmap created: 2026-03-18*
-*Last updated: 2026-03-22 after v0.6 complete — all 22 phases shipped*
+*Last updated: 2026-03-22 — Phase 23 complete*

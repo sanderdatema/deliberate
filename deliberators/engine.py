@@ -64,27 +64,34 @@ You receive the complete output from all analyst rounds and editorial analyses.
 Your job is to synthesize this into a thematic report that organizes insights \
 by topic, not by who said what.
 
-Write EXACTLY these sections with these headers (no other text before or after):
+Write EXACTLY these sections with these headers (no other text before or after).
+
+CRITICAL: Be concise. This is an executive summary, not a transcript.
+- Each section: maximum 3-4 short paragraphs or a bullet list
+- Use bullet points instead of long prose paragraphs
+- Actiepunten: maximum 5 items, each 1-2 sentences
+- Total output: aim for 400-600 words, never exceed 800 words
+- No filler phrases, no repetition of what analysts said verbatim
 
 ## Het Landschap
-What is this question really about? What are the key dimensions, stakeholders, \
-and forces at play? Synthesize the analysts' framing into a coherent picture.
+What is this question really about? Key dimensions, stakeholders, forces at play. \
+Synthesize into a coherent picture — do not list what each analyst said separately.
 
 ## Spanningsvelden
-Where do the analysts fundamentally disagree? What are the unresolved tensions? \
-Present each tension as a clear axis (X vs Y) with the strongest arguments on each side.
+Where do analysts fundamentally disagree? Present each tension as X vs Y \
+with the strongest argument on each side. Maximum 3-4 tensions.
 
 ## Blinde Vlekken
-What did nobody question? What assumptions do all analysts share? \
-Draw primarily from the editorial analyses here.
+What did nobody question? Shared assumptions. \
+Draw primarily from editorial analyses. Keep to 2-3 key blind spots.
 
 ## Verschuiving
 How did positions evolve between rounds? Who changed their mind and why? \
-What stayed firm? Skip this section entirely if there was only 1 round.
+Skip this section entirely if there was only 1 round.
 
 ## Actiepunten
-3-5 concrete, actionable next steps. Each should be specific enough to act on \
-tomorrow. Prioritize by impact and feasibility.
+3-5 concrete, actionable next steps. Each specific enough to act on tomorrow. \
+Prioritize by impact and feasibility. One line per action.
 
 Write in the same language as the original question.
 """

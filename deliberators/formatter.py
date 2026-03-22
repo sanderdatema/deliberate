@@ -12,18 +12,19 @@ class ResultFormatter:
     def __init__(self, personas: dict[str, Persona]) -> None:
         self.personas = personas
 
-    def format(self, result: DeliberationResult) -> str:
+    def format(self, result: DeliberationResult, *, verbose: bool = False) -> str:
         """Format the full deliberation result as markdown.
 
         If synthesis_output is available, produces a thematic report.
         Otherwise, falls back to per-persona format.
+        When verbose=True, includes the full per-persona appendix.
         """
         if result.synthesis_output:
-            return self._format_thematic(result)
+            return self._format_thematic(result, verbose=verbose)
         return self._format_per_persona(result)
 
-    def _format_thematic(self, result: DeliberationResult) -> str:
-        """Thematic report: synthesis sections + per-persona appendix."""
+    def _format_thematic(self, result: DeliberationResult, *, verbose: bool = False) -> str:
+        """Thematic report: synthesis sections, optionally with per-persona appendix."""
         sections: list[str] = []
 
         # Samenvatter first (Kort & Concreet)
@@ -38,10 +39,11 @@ class ResultFormatter:
         # Synthesis sections (already contain ## headers)
         sections.append(result.synthesis_output)
 
-        # Appendix: per-persona output
-        sections.append("\n---\n")
-        sections.append("## Volledig Verslag\n")
-        sections.append(self._render_per_persona_body(result))
+        # Appendix: per-persona output (only with --verbose)
+        if verbose:
+            sections.append("\n---\n")
+            sections.append("## Volledig Verslag\n")
+            sections.append(self._render_per_persona_body(result))
 
         return "\n".join(sections)
 

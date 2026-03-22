@@ -114,6 +114,12 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="ID",
         help="Vervolg op een eerdere deliberatie (ID of prefix)",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="Toon volledig verslag (per-persona output) in rapport",
+    )
     return parser
 
 
@@ -198,7 +204,7 @@ async def _run(args: argparse.Namespace) -> int:
     )
 
     formatter = ResultFormatter(personas)
-    formatted = formatter.format(result)
+    formatted = formatter.format(result, verbose=args.verbose)
 
     # Save decision record
     follow_up_of = prior_decision.id if prior_decision else None

@@ -94,29 +94,37 @@ class TestResultFormatter:
         assert "## Blinde Vlekken" in output
         assert "## Actiepunten" in output
 
-    def test_format_contains_appendix_with_personas(self, personas: dict[str, Persona]) -> None:
-        """Thematic report has Volledig Verslag appendix with per-persona output."""
+    def test_format_default_no_appendix(self, personas: dict[str, Persona]) -> None:
+        """Default thematic report does NOT include Volledig Verslag appendix."""
         formatter = ResultFormatter(personas)
         result = self._make_result()
         output = formatter.format(result)
+        assert "## Volledig Verslag" not in output
+        assert "Occam's analysis" not in output
+
+    def test_format_verbose_includes_appendix(self, personas: dict[str, Persona]) -> None:
+        """Verbose thematic report includes Volledig Verslag with per-persona output."""
+        formatter = ResultFormatter(personas)
+        result = self._make_result()
+        output = formatter.format(result, verbose=True)
         assert "## Volledig Verslag" in output
         assert "Occam's analysis" in output
         assert "Holmes's analysis" in output
         assert "Lupin's analysis" in output
         assert "Marx editorial" in output
 
-    def test_format_contains_analyst_output(self, personas: dict[str, Persona]) -> None:
+    def test_format_verbose_contains_analyst_output(self, personas: dict[str, Persona]) -> None:
         formatter = ResultFormatter(personas)
         result = self._make_result()
-        output = formatter.format(result)
+        output = formatter.format(result, verbose=True)
         assert "Occam's analysis" in output
         assert "Holmes's analysis" in output
         assert "Lupin's analysis" in output
 
-    def test_format_contains_editor_output(self, personas: dict[str, Persona]) -> None:
+    def test_format_verbose_contains_editor_output(self, personas: dict[str, Persona]) -> None:
         formatter = ResultFormatter(personas)
         result = self._make_result()
-        output = formatter.format(result)
+        output = formatter.format(result, verbose=True)
         assert "Marx editorial" in output
 
     def test_format_contains_samenvatter(self, personas: dict[str, Persona]) -> None:
@@ -152,7 +160,7 @@ class TestResultFormatter:
         result = self._make_result()
         output = formatter.format(result)
         assert output.count("# ") >= 2  # At least title + thematic headers
-        assert output.count("## ") >= 4  # Kort & Concreet + thematic sections + appendix
+        assert output.count("## ") >= 4  # Kort & Concreet + thematic sections (no appendix)
 
 
 class TestCLIParser:
@@ -182,6 +190,16 @@ class TestCLIParser:
         assert args.preset == "balanced"
         assert args.files == [Path("main.py")]
         assert args.question == "review this"
+
+    def test_verbose_flag_default_false(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["question"])
+        assert args.verbose is False
+
+    def test_verbose_flag_set(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["question", "--verbose"])
+        assert args.verbose is True
 
 
 class TestWebPusherClientReuse:

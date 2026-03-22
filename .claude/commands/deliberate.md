@@ -336,9 +336,9 @@ How positions evolved between rounds. Skip if only 1 round.
 Respond in the same language as the question.
 ```
 
-## Step 8: Format Full Report
+## Step 8: Format Final Report
 
-Present the complete deliberation as a thematic markdown report:
+Present the deliberation as a compact thematic report. Do NOT include per-persona output (Volledig Verslag) — that is only available via the CLI `--verbose` flag.
 
 ```markdown
 ## Kort & Concreet
@@ -350,35 +350,9 @@ Present the complete deliberation as a thematic markdown report:
 # Deliberatie: {$ARGUMENTS}
 
 {synthesis output — contains ## Het Landschap, ## Spanningsvelden, ## Blinde Vlekken, ## Verschuiving, ## Actiepunten}
-
----
-
-## Volledig Verslag
-
-### Ronde 1: Onafhankelijke Analyse
-
-#### {Analyst 1 name} — {reasoning style}
-{analyst 1 round 1 output}
-
-#### {Analyst 2 name} — {reasoning style}
-{analyst 2 round 1 output}
-
-[...all analysts...]
-
-### Ronde 2: Reactieve Deliberatie
-
-#### {Analyst 1 name} — Reactie
-{analyst 1 round 2 output}
-
-[...all analysts...]
-
-### Redactionele Analyse
-
-#### {Editor 1 name} — {reasoning style}
-{editor 1 output}
-
-[...all editors...]
 ```
+
+**IMPORTANT**: The report ends after the synthesis sections. Do NOT append per-persona round output, editorial analysis, or any "Volledig Verslag" appendix. The CLI supports `--verbose` for that; the slash command always shows the compact format.
 
 ## Important Notes
 

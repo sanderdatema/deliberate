@@ -167,7 +167,7 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 
 ### v0.7 Kwaliteit & Beknoptheid
 Status: **In Progress**
-Phases: 2 of 3 complete
+Phases: 3 of 3 complete
 
 Gedreven door meta-deliberatie op eigen codebase: rapport output te lang, fragiele parsing, ontbrekende validatie, code duplicatie. Focus op kwaliteit en beknoptheid, niet op nieuwe features.
 
@@ -175,7 +175,7 @@ Gedreven door meta-deliberatie op eigen codebase: rapport output te lang, fragie
 |-------|------|-------|--------|-----------|
 | 23 | Rapportage Inkorten | 1 | Complete | 2026-03-22 |
 | 24 | Robuustheid | 1 | Complete | 2026-03-22 |
-| 25 | Refactoring | TBD | Not started | - |
+| 25 | Refactoring | 1 | Complete | 2026-03-22 |
 
 ## Phase Details (v0.7)
 
@@ -185,10 +185,9 @@ Gedreven door meta-deliberatie op eigen codebase: rapport output te lang, fragie
 ### Phase 24: Robuustheid ✅
 - [x] 24-01: WebPusher try/finally, empty ID guard, parse failure logging, team size validation (2026-03-22)
 
-### Phase 25: Refactoring
-**Focus:** _call_agent en _call_functional_agent samenvoegen tot één methode. DeliberationResult verplaatsen van engine.py naar models.py.
-**Plane:** DELIB-6, DELIB-7
+### Phase 25: Refactoring ✅
+- [x] 25-01: DeliberationResult naar models.py, _call_functional_agent samengevoegd met _subprocess_call (2026-03-22)
 
 ---
 *Roadmap created: 2026-03-18*
-*Last updated: 2026-03-22 — Phase 23 complete*
+*Last updated: 2026-03-22 — v0.7 complete*

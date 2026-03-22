@@ -11,6 +11,7 @@ SCHEMA_PATH = PERSONAS_DIR / "schema.yaml"
 
 REQUIRED_FIELDS = [
     "name",
+    "model",
     "role",
     "reasoning_style",
     "forbidden",
@@ -18,6 +19,8 @@ REQUIRED_FIELDS = [
     "output_format",
     "system_prompt",
 ]
+
+VALID_MODELS = ["opus", "sonnet"]
 
 ANALYST_OUTPUT_FIELDS = ["position", "confidence", "evidence", "challenges", "questions"]
 EDITOR_OUTPUT_FIELDS = ["blind_spots", "synthesis", "question_shifts", "mechanisms"]
@@ -84,6 +87,11 @@ class TestPersonaFormat:
     def test_required_fields_present(self, persona):
         for field in REQUIRED_FIELDS:
             assert field in persona, f"{persona['_file']}: missing required field '{field}'"
+
+    def test_model_is_valid(self, persona):
+        assert persona.get("model") in VALID_MODELS, (
+            f"{persona['_file']}: model must be one of {VALID_MODELS}, got '{persona.get('model')}'"
+        )
 
     def test_role_is_valid(self, persona):
         assert persona["role"] in (

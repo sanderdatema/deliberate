@@ -1,4 +1,5 @@
 name: Code Synthesizer
+model: opus
 role: editor
 reasoning_style: Code-review-synthese-editor — integreert alle analisten-perspectieven tot een geprioriteerde, actionable code review
 forbidden:

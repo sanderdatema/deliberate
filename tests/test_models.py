@@ -9,6 +9,7 @@ class TestPersona:
     def test_create_analyst(self):
         p = Persona(
             name="Test",
+            model="opus",
             role="analyst",
             reasoning_style="Test style",
             forbidden=("a", "b"),
@@ -23,6 +24,7 @@ class TestPersona:
     def test_create_editor(self):
         p = Persona(
             name="Editor",
+            model="sonnet",
             role="editor",
             reasoning_style="Editorial style",
             forbidden=("a", "b", "c"),
@@ -35,6 +37,7 @@ class TestPersona:
     def test_frozen(self):
         p = Persona(
             name="Test",
+            model="opus",
             role="analyst",
             reasoning_style="",
             forbidden=("a", "b"),

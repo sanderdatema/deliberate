@@ -31,6 +31,9 @@ class MockProcess:
             self.stdin_text = input.decode()
         return self._stdout, self._stderr
 
+    def kill(self) -> None:
+        pass
+
 
 class SubprocessTracker:
     """Track all claude -p subprocess calls and their inputs."""
@@ -229,7 +232,7 @@ class TestRound2FullOutput:
             "Willem van Occam": "Occam thorough razor analysis with evidence chains",
             "Leonardo da Vinci": "Da Vinci cross-domain patterns with structural analogies",
             "Sherlock Holmes": "Holmes deductive evidence with specific anomalies",
-            "Lupin": "Lupin contrarian inversion with supporting evidence",
+            "Machiavelli": "Machiavelli strategic realism with incentive analysis",
         }
         tracker = make_mock_subprocess(response_map=response_map)
         with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
@@ -580,7 +583,7 @@ class TestAgentErrorHandling:
         # Other analysts should have succeeded
         assert result.rounds[1]["holmes"] != ""
         assert "[Agent fout:" not in result.rounds[1]["holmes"]
-        assert result.rounds[1]["lupin"] != ""
+        assert result.rounds[1]["machiavelli"] != ""
 
     @pytest.mark.asyncio
     async def test_deliberation_completes_despite_failure(self, config: Config, personas: dict[str, Persona]) -> None:
@@ -692,8 +695,8 @@ class TestSubprocessArgs:
     """Verify correct arguments are passed to claude -p."""
 
     @pytest.mark.asyncio
-    async def test_model_passed_from_config(self, config: Config, personas: dict[str, Persona]) -> None:
-        """The --model flag matches config.model."""
+    async def test_model_passed_from_persona(self, config: Config, personas: dict[str, Persona]) -> None:
+        """The --model flag matches persona.model, not config.model."""
         tracker = make_mock_subprocess()
         with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
             engine = DeliberationEngine(config, personas)
@@ -703,7 +706,26 @@ class TestSubprocessArgs:
             args = list(call["args"])
             assert "--model" in args
             model_idx = args.index("--model")
-            assert args[model_idx + 1] == config.model
+            model_used = args[model_idx + 1]
+            assert model_used in ("opus", "sonnet")
+
+    @pytest.mark.asyncio
+    async def test_mixed_models_in_quick_preset(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Quick preset uses mix of sonnet and opus models per persona."""
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test", "quick")
+
+        models_used = set()
+        for call in tracker.calls:
+            args = list(call["args"])
+            model_idx = args.index("--model")
+            models_used.add(args[model_idx + 1])
+
+        # Quick has sonnet analysts (occam, holmes) + opus analyst (machiavelli) + opus editor (marx) + sonnet editor (samenvatter)
+        assert "sonnet" in models_used
+        assert "opus" in models_used
 
     @pytest.mark.asyncio
     async def test_system_prompt_from_persona(self, config: Config, personas: dict[str, Persona]) -> None:
@@ -728,3 +750,185 @@ class TestSubprocessArgs:
         for call in tracker.calls:
             stdin_text = call["process"].stdin_text
             assert "My test question" in stdin_text
+
+
+class TestInjectableAgentFn:
+    """Injectable agent_fn allows tests to bypass subprocess mocking."""
+
+    @pytest.mark.asyncio
+    async def test_agent_fn_called_instead_of_subprocess(
+        self, config: Config, personas: dict[str, Persona]
+    ) -> None:
+        """When agent_fn is provided, subprocess is NOT called."""
+        calls: list[tuple[str, str]] = []
+
+        async def fake_agent(persona: Persona, prompt: str) -> str:
+            calls.append((persona.name, prompt))
+            return f"Response from {persona.name}"
+
+        engine = DeliberationEngine(config, personas, agent_fn=fake_agent)
+        result = await engine.run("Test question", "quick")
+
+        # 3 analysts + 2 editors = 5 calls
+        assert len(calls) == 5
+        assert result.rounds[1]["occam"] == "Response from Willem van Occam"
+        assert result.samenvatter_output is not None
+
+    @pytest.mark.asyncio
+    async def test_agent_fn_receives_correct_persona(
+        self, config: Config, personas: dict[str, Persona]
+    ) -> None:
+        """agent_fn receives the correct Persona object."""
+        received_personas: list[str] = []
+
+        async def fake_agent(persona: Persona, prompt: str) -> str:
+            received_personas.append(persona.name)
+            return "OK"
+
+        engine = DeliberationEngine(config, personas, agent_fn=fake_agent)
+        await engine.run("Test", "quick")
+
+        # Quick preset: occam, holmes, machiavelli (analysts) + marx, samenvatter (editors)
+        assert "Willem van Occam" in received_personas
+        assert "Sherlock Holmes" in received_personas
+        assert "Niccol\u00f2 Machiavelli" in received_personas
+
+    @pytest.mark.asyncio
+    async def test_agent_fn_with_on_text_callback(
+        self, config: Config, personas: dict[str, Persona]
+    ) -> None:
+        """on_text callback still fires when using injectable agent_fn."""
+        text_chunks: list[tuple[str, str]] = []
+
+        async def fake_agent(persona: Persona, prompt: str) -> str:
+            return f"Output from {persona.name}"
+
+        async def on_text(agent_name: str, text: str) -> None:
+            text_chunks.append((agent_name, text))
+
+        engine = DeliberationEngine(
+            config, personas, agent_fn=fake_agent, on_text=on_text
+        )
+        await engine.run("Test", "quick")
+
+        assert len(text_chunks) == 5
+        names = {name for name, _ in text_chunks}
+        assert "Willem van Occam" in names
+
+    @pytest.mark.asyncio
+    async def test_default_uses_subprocess_when_no_agent_fn(
+        self, config: Config, personas: dict[str, Persona]
+    ) -> None:
+        """Without agent_fn, the engine uses subprocess (backward compat)."""
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test", "quick")
+
+        assert tracker.call_count == 5
+
+
+class TestSubprocessTimeout:
+    """Subprocess calls have a configurable timeout."""
+
+    @pytest.mark.asyncio
+    async def test_timeout_returns_error_string(self, personas: dict[str, Persona]) -> None:
+        """A timed-out subprocess returns an error message."""
+        timeout_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="", rounds=1,
+                    analysts=("occam",),
+                    editors=("samenvatter",),
+                ),
+            },
+            timeout=1,
+        )
+
+        async def hanging_exec(*args: str, **kwargs: object) -> MockProcess:
+            proc = MockProcess("will never arrive")
+            original_communicate = proc.communicate
+
+            async def slow_communicate(input: bytes | None = None) -> tuple[bytes, bytes]:
+                await asyncio.sleep(10)  # Way longer than timeout
+                return await original_communicate(input)
+
+            proc.communicate = slow_communicate
+            return proc
+
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=hanging_exec)):
+            engine = DeliberationEngine(timeout_config, personas)
+            result = await engine.run("Test", "test")
+
+        assert "[Agent fout:" in result.rounds[1]["occam"]
+        assert "timeout" in result.rounds[1]["occam"]
+
+    @pytest.mark.asyncio
+    async def test_timeout_value_from_config(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Config timeout value is used (default 120s)."""
+        assert config.timeout == 120
+
+    @pytest.mark.asyncio
+    async def test_custom_timeout_in_config(self, personas: dict[str, Persona]) -> None:
+        """Custom timeout value is respected."""
+        custom_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="", rounds=1,
+                    analysts=("occam",),
+                    editors=("samenvatter",),
+                ),
+            },
+            timeout=60,
+        )
+        assert custom_config.timeout == 60
+
+
+class TestConcurrencyLimit:
+    """Concurrent agent calls are limited by max_concurrent."""
+
+    @pytest.mark.asyncio
+    async def test_max_concurrent_from_config(self, config: Config) -> None:
+        """Config has max_concurrent field."""
+        assert config.max_concurrent == 10
+
+    @pytest.mark.asyncio
+    async def test_concurrent_agents_limited(self, personas: dict[str, Persona]) -> None:
+        """Semaphore limits concurrent agents to max_concurrent."""
+        max_concurrent = 2
+        concurrency_log: list[int] = []
+        current_count = 0
+
+        async def tracking_agent(persona: Persona, prompt: str) -> str:
+            nonlocal current_count
+            current_count += 1
+            concurrency_log.append(current_count)
+            await asyncio.sleep(0.01)
+            current_count -= 1
+            return f"Response from {persona.name}"
+
+        limited_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="", rounds=1,
+                    analysts=("occam", "holmes", "machiavelli", "socrates", "da-vinci"),
+                    editors=("samenvatter",),
+                ),
+            },
+            max_concurrent=max_concurrent,
+        )
+
+        engine = DeliberationEngine(limited_config, personas, agent_fn=tracking_agent)
+        await engine.run("Test", "test")
+
+        # Peak concurrency should never exceed max_concurrent
+        assert max(concurrency_log) <= max_concurrent

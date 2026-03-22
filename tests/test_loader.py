@@ -85,6 +85,7 @@ class TestPersonaLoaderValidation:
 
     def test_missing_name_raises(self, tmp_path):
         path = self._write_yaml(tmp_path, {
+            "model": "opus",
             "role": "analyst",
             "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
             "forbidden": ["a", "b"],
@@ -95,15 +96,38 @@ class TestPersonaLoaderValidation:
     def test_missing_system_prompt_raises(self, tmp_path):
         path = self._write_yaml(tmp_path, {
             "name": "Test",
+            "model": "opus",
             "role": "analyst",
             "forbidden": ["a", "b"],
         })
         with pytest.raises(PersonaLoadError, match="missing required fields.*system_prompt"):
             PersonaLoader.load(path)
 
+    def test_missing_model_raises(self, tmp_path):
+        path = self._write_yaml(tmp_path, {
+            "name": "Test",
+            "role": "analyst",
+            "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
+            "forbidden": ["a", "b"],
+        })
+        with pytest.raises(PersonaLoadError, match="missing required fields.*model"):
+            PersonaLoader.load(path)
+
+    def test_invalid_model_raises(self, tmp_path):
+        path = self._write_yaml(tmp_path, {
+            "name": "Test",
+            "model": "haiku",
+            "role": "analyst",
+            "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
+            "forbidden": ["a", "b"],
+        })
+        with pytest.raises(PersonaLoadError, match="model must be one of"):
+            PersonaLoader.load(path)
+
     def test_too_few_forbidden_raises(self, tmp_path):
         path = self._write_yaml(tmp_path, {
             "name": "Test",
+            "model": "opus",
             "role": "analyst",
             "system_prompt": "You are FORBIDDEN from X. You MUST NOT Y.",
             "forbidden": ["only one"],
@@ -114,6 +138,7 @@ class TestPersonaLoaderValidation:
     def test_missing_forbidden_keyword_raises(self, tmp_path):
         path = self._write_yaml(tmp_path, {
             "name": "Test",
+            "model": "opus",
             "role": "analyst",
             "system_prompt": "You are not allowed to do X. You MUST NOT Y.",
             "forbidden": ["a", "b"],
@@ -124,6 +149,7 @@ class TestPersonaLoaderValidation:
     def test_missing_must_not_keyword_raises(self, tmp_path):
         path = self._write_yaml(tmp_path, {
             "name": "Test",
+            "model": "opus",
             "role": "analyst",
             "system_prompt": "You are FORBIDDEN from X. You should not Y.",
             "forbidden": ["a", "b"],
@@ -139,6 +165,7 @@ class TestPersonaLoaderAutodiscovery:
         """load_all finds all .yaml files except schema.yaml."""
         valid_data = {
             "name": "Test Persona",
+            "model": "opus",
             "role": "analyst",
             "reasoning_style": "testing",
             "forbidden": ["a", "b"],
@@ -166,6 +193,7 @@ class TestPersonaLoaderAutodiscovery:
         """Adding a new .yaml file makes it appear in load_all."""
         valid_data = {
             "name": "New Persona",
+            "model": "sonnet",
             "role": "analyst",
             "reasoning_style": "new",
             "forbidden": ["a", "b"],
@@ -233,7 +261,7 @@ class TestConfigLoader:
 
     def test_quick_preset_analysts(self, config):
         quick = config.presets["quick"]
-        assert quick.analysts == ("occam", "holmes", "lupin")
+        assert quick.analysts == ("occam", "holmes", "machiavelli")
 
     def test_quick_preset_has_two_editors(self, config):
         """Regression test: config.yaml has 2 editors for quick (marx + samenvatter).

@@ -1,24 +1,26 @@
 default_preset: balanced
 rounds: 2
 model: opus
+timeout: 120
+max_concurrent: 10
 
 presets:
   quick:
-    description: "Snelle analyse — 3 analisten + 1 editor, 1 ronde"
+    description: "Snelle analyse — 3 analisten + 2 editors, 1 ronde"
     rounds: 1
-    analysts: [occam, holmes, lupin]
+    analysts: [occam, holmes, machiavelli]
     editors: [marx, samenvatter]
     summarizer: samenvatter
   balanced:
-    description: "Standaard deliberatie — 5 analisten + 3 editors, 2 rondes"
+    description: "Standaard deliberatie — 5 analisten + 4 editors, 2 rondes"
     rounds: 2
-    analysts: [socrates, occam, da-vinci, holmes, lupin]
+    analysts: [socrates, occam, da-vinci, holmes, machiavelli]
     editors: [marx, hegel, arendt, samenvatter]
     summarizer: samenvatter
   deep:
     description: "Diepgaande analyse — 8 analisten + 4 editors, 2 rondes"
     rounds: 2
-    analysts: [socrates, occam, da-vinci, holmes, lupin, templar, tubman, ibn-khaldun]
+    analysts: [socrates, occam, da-vinci, holmes, machiavelli, templar, tubman, ibn-khaldun]
     editors: [marx, hegel, arendt, samenvatter]
     summarizer: samenvatter
   code_quick:
@@ -34,5 +36,5 @@ presets:
   code_deep:
     description: "Diepgaande code review — 9 analisten + 1 editor, 2 rondes"
     rounds: 2
-    analysts: [linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, christensen, hopper]
+    analysts: [linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, knuth, hopper]
     editors: [code-synthesizer]

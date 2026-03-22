@@ -1,11 +1,16 @@
 required_fields:
   - name
+  - model
   - role
   - reasoning_style
   - forbidden
   - focus
   - output_format
   - system_prompt
+
+model_values:
+  - opus
+  - sonnet
 
 role_values:
   - analyst

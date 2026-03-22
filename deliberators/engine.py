@@ -15,6 +15,7 @@ from deliberators.models import Config, DeliberationEvent, Persona, Preset
 
 EventCallback = Callable[[DeliberationEvent], Awaitable[None] | None]
 TextCallback = Callable[[str, str], Awaitable[None] | None]  # (agent_name, text_delta)
+AgentFn = Callable[[Persona, str], Awaitable[str]]
 
 
 @dataclass
@@ -38,11 +39,13 @@ class DeliberationEngine:
         personas: dict[str, Persona],
         on_event: EventCallback | None = None,
         on_text: TextCallback | None = None,
+        agent_fn: AgentFn | None = None,
     ) -> None:
         self.config = config
         self.personas = personas
         self.on_event = on_event
         self.on_text = on_text
+        self._agent_fn = agent_fn
 
     async def run(
         self, question: str, preset_name: str | None = None,
@@ -106,29 +109,32 @@ class DeliberationEngine:
         prior_round_output: dict[str, str] | None,
         code_context: str | None = None,
     ) -> dict[str, str]:
-        """Run all analysts for a round in parallel."""
+        """Run all analysts for a round in parallel with concurrency limit."""
         await self._emit(DeliberationEvent(type="round_started", round_number=round_num))
 
+        sem = asyncio.Semaphore(self.config.max_concurrent)
+
         async def run_one(name: str) -> tuple[str, str]:
-            if name not in self.personas:
-                logger.warning("Persona '%s' not found, skipping", name)
-                return name, ""
-            persona = self.personas[name]
+            async with sem:
+                if name not in self.personas:
+                    logger.warning("Persona '%s' not found, skipping", name)
+                    return name, ""
+                persona = self.personas[name]
 
-            await self._emit(DeliberationEvent(
-                type="agent_started", agent_name=name, round_number=round_num
-            ))
+                await self._emit(DeliberationEvent(
+                    type="agent_started", agent_name=name, round_number=round_num
+                ))
 
-            prompt = self._build_analyst_prompt(
-                persona, question, round_num, prior_round_output, code_context
-            )
-            output = await self._call_agent(persona, prompt)
+                prompt = self._build_analyst_prompt(
+                    persona, question, round_num, prior_round_output, code_context
+                )
+                output = await self._call_agent(persona, prompt)
 
-            await self._emit(DeliberationEvent(
-                type="agent_completed", agent_name=name, round_number=round_num,
-                data={"output": output},
-            ))
-            return name, output
+                await self._emit(DeliberationEvent(
+                    type="agent_completed", agent_name=name, round_number=round_num,
+                    data={"output": output},
+                ))
+                return name, output
 
         results = await asyncio.gather(*(run_one(name) for name in analyst_names))
         round_output = dict(results)
@@ -137,27 +143,45 @@ class DeliberationEngine:
         return round_output
 
     async def _call_agent(self, persona: Persona, prompt: str) -> str:
-        """Call an agent via claude -p subprocess."""
+        """Call an agent using either the injected function or default subprocess."""
+        if self._agent_fn:
+            output = await self._agent_fn(persona, prompt)
+        else:
+            output = await self._subprocess_call(persona, prompt)
+        if self.on_text:
+            await _maybe_await(self.on_text(persona.name, output))
+        return output
+
+    async def _subprocess_call(self, persona: Persona, prompt: str) -> str:
+        """Default agent implementation: call claude -p subprocess with timeout."""
+        model = persona.model or self.config.model
         try:
             proc = await asyncio.create_subprocess_exec(
                 "claude", "-p",
-                "--model", self.config.model,
+                "--model", model,
                 "--system-prompt", persona.system_prompt,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await proc.communicate(input=prompt.encode())
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(input=prompt.encode()),
+                timeout=self.config.timeout,
+            )
 
             if proc.returncode != 0:
                 error_msg = stderr.decode().strip()
                 logger.error("Agent '%s' failed (exit %d): %s", persona.name, proc.returncode, error_msg)
                 return f"[Agent fout: {persona.name} — exit code {proc.returncode}]"
 
-            output = stdout.decode()
-            if self.on_text:
-                await _maybe_await(self.on_text(persona.name, output))
-            return output
+            return stdout.decode()
+        except asyncio.TimeoutError:
+            logger.error("Agent '%s' timed out after %ds", persona.name, self.config.timeout)
+            try:
+                proc.kill()
+            except ProcessLookupError:
+                pass
+            return f"[Agent fout: {persona.name} — timeout na {self.config.timeout}s]"
         except Exception as e:
             logger.error("Agent '%s' failed: %s", persona.name, e)
             return f"[Agent fout: {persona.name} — {type(e).__name__}: {e}]"

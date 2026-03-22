@@ -8,7 +8,8 @@ import yaml
 
 from deliberators.models import Config, Persona, Preset
 
-REQUIRED_PERSONA_FIELDS = {"name", "role", "system_prompt", "forbidden"}
+REQUIRED_PERSONA_FIELDS = {"name", "model", "role", "system_prompt", "forbidden"}
+VALID_MODELS = ("opus", "sonnet")
 _BUNDLED_DATA_DIR = Path(__file__).parent / "data"
 _USER_CONFIG_DIR = Path.home() / ".config" / "deliberators"
 
@@ -77,8 +78,15 @@ class PersonaLoader:
                     f"{path.name}: system_prompt must contain '{keyword}'"
                 )
 
+        model = data.get("model", "")
+        if model not in VALID_MODELS:
+            raise PersonaLoadError(
+                f"{path.name}: model must be one of {VALID_MODELS}, got '{model}'"
+            )
+
         return Persona(
             name=data["name"],
+            model=model,
             role=data["role"],
             reasoning_style=data.get("reasoning_style", ""),
             forbidden=tuple(forbidden),
@@ -126,6 +134,8 @@ class ConfigLoader:
             rounds=data.get("rounds", 2),
             model=data.get("model", "opus"),
             presets=presets,
+            timeout=data.get("timeout", 120),
+            max_concurrent=data.get("max_concurrent", 10),
         )
 
     @staticmethod

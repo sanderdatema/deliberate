@@ -225,6 +225,57 @@ Maak `deliberators` installeerbaar via `uv tool install` zodat `/deliberate` en 
 - CONFIG_PATH en PERSONAS_DIR geparametriseerd
 - Global copies bijgewerkt in `~/.claude/commands/`
 
+### v0.6 Adaptive Deliberation
+Status: **In progress**
+Phases: 0 of 5 complete
+
+Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model routing, intake fase, adaptive rounds met convergentie-detectie, decision memory, en thematische rapportage.
+
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 16 | Persona & Model Routing | 1 | Planning | |
+| 17 | Intake Fase | 1 | Not started | |
+| 18 | Adaptive Rounds | 1 | Not started | |
+| 19 | Decision Memory | 1 | Not started | |
+| 20 | Rapportage Redesign | 1 | Not started | |
+
+## Phase Details (v0.6)
+
+### Phase 16: Persona & Model Routing
+**Focus:** Persona-wijzigingen (Lupin→Machiavelli, Christensen→Knuth, Ive→UI/UX) en per-persona model routing (Sonnet/Opus per YAML). Fundering voor alle volgende phases.
+
+**Plans:**
+- [ ] 16-01: Schema + models + loader + engine + persona swaps + model assignments
+
+**Key deliverables:**
+- `model: opus|sonnet` veld in alle persona YAML's
+- Engine gebruikt per-persona model i.p.v. globaal config.model
+- Machiavelli (strategisch realist) vervangt Lupin
+- Knuth (performance/algorithmic) vervangt Christensen
+- Ive herdefinieerd naar UI/UX design reviewer
+
+**Depends on:** None (first phase of v0.6)
+
+### Phase 17: Intake Fase
+**Focus:** Functionele intake-agent die vraag analyseert op helderheid, missende context, impliciete aannames. Produceert intake-brief die meegaat naar analysts.
+
+**Depends on:** Phase 16 (model routing voor intake-agent)
+
+### Phase 18: Adaptive Rounds
+**Focus:** Convergentie-detectie vervangt vast aantal rondes. Functionele convergentie-agent evalueert na elke ronde of doorgaan waarde toevoegt.
+
+**Depends on:** Phase 17 (intake-brief gaat mee in convergence context)
+
+### Phase 19: Decision Memory
+**Focus:** Structured JSON opslag van deliberaties. CLI flags voor history en follow-up.
+
+**Depends on:** Phase 16 (model routing)
+
+### Phase 20: Rapportage Redesign
+**Focus:** Thematische rapportage i.p.v. per-persona output. Geintegreerd document met landschap, spanningsveld, blinde vlekken, actiepunten.
+
+**Depends on:** Phase 18 (convergentie-info), Phase 19 (actiepunten-structuur)
+
 ---
 *Roadmap created: 2026-03-18*
-*Last updated: 2026-03-18*
+*Last updated: 2026-03-22*

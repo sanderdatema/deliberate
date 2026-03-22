@@ -11,6 +11,7 @@ class Persona:
     """A thinker persona loaded from YAML."""
 
     name: str
+    model: str  # "opus" or "sonnet"
     role: Literal["analyst", "editor"]
     reasoning_style: str
     forbidden: tuple[str, ...]
@@ -39,6 +40,8 @@ class Config:
     rounds: int
     model: str
     presets: dict[str, Preset]
+    timeout: int = 120
+    max_concurrent: int = 10
 
 
 @dataclass(frozen=True)

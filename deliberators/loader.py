@@ -119,13 +119,24 @@ class ConfigLoader:
             raise ConfigLoadError("config.yaml: missing 'presets' section")
 
         presets: dict[str, Preset] = {}
+        default_rounds = data.get("rounds", 2)
         for name, preset_data in data["presets"].items():
+            # Support both max_rounds (new) and rounds (legacy fallback)
+            max_rounds = preset_data.get(
+                "max_rounds", preset_data.get("rounds", default_rounds)
+            )
+            min_rounds = preset_data.get("min_rounds", 1)
+            if min_rounds > max_rounds:
+                raise ConfigLoadError(
+                    f"preset '{name}': min_rounds ({min_rounds}) > max_rounds ({max_rounds})"
+                )
             presets[name] = Preset(
                 name=name,
                 description=preset_data.get("description", ""),
-                rounds=preset_data.get("rounds", data.get("rounds", 2)),
+                max_rounds=max_rounds,
                 analysts=tuple(preset_data.get("analysts", [])),
                 editors=tuple(preset_data.get("editors", [])),
+                min_rounds=min_rounds,
                 summarizer=preset_data.get("summarizer"),
             )
 

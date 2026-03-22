@@ -68,6 +68,10 @@ def build_code_context(paths: list[Path]) -> str | None:
             logger.warning("Path traversal detected, skipping: %s", path)
             continue
 
+        if path.is_symlink():
+            logger.warning("Symlink detected, skipping: %s → %s", path, path.resolve())
+            continue
+
         if not path.exists():
             logger.warning("File not found, skipping: %s", path)
             continue

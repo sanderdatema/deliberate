@@ -66,8 +66,8 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        # Round 2 calls are 7-11 (after 1 intake + 5 Round 1 calls)
-        round2_calls = tracker.calls[6:11]
+        # Round 2 calls are 8-12 (after 1 intake + 5 Round 1 + 1 convergence)
+        round2_calls = tracker.calls[7:12]
         for call in round2_calls:
             content = call["process"].stdin_text
             assert "THIS IS ROUND 2" in content
@@ -82,7 +82,7 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        round2_calls = tracker.calls[6:11]
+        round2_calls = tracker.calls[7:12]
         for call in round2_calls:
             content = call["process"].stdin_text
             assert "Detailed analysis with evidence and reasoning" in content
@@ -97,8 +97,8 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        # Editor calls are after 1 intake + 10 analyst calls
-        editor_calls = tracker.calls[11:]
+        # Editor calls are after 1 intake + 5 R1 + 1 convergence + 5 R2 = 12
+        editor_calls = tracker.calls[12:]
         for call in editor_calls:
             content = call["process"].stdin_text
             assert "Round 1" in content

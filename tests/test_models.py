@@ -2,7 +2,7 @@
 
 import pytest
 
-from deliberators.models import Config, DeliberationEvent, IntakeBrief, Persona, Preset
+from deliberators.models import Config, ConvergenceResult, DeliberationEvent, IntakeBrief, Persona, Preset
 
 
 class TestPersona:
@@ -54,23 +54,53 @@ class TestPreset:
         p = Preset(
             name="test",
             description="A test preset",
-            rounds=2,
+            max_rounds=2,
             analysts=("a", "b"),
             editors=("c",),
         )
         assert p.name == "test"
-        assert p.rounds == 2
+        assert p.max_rounds == 2
+        assert p.min_rounds == 1  # default
         assert len(p.analysts) == 2
 
+    def test_create_with_min_rounds(self):
+        p = Preset(
+            name="test",
+            description="",
+            max_rounds=3,
+            analysts=("a",),
+            editors=("b",),
+            min_rounds=2,
+        )
+        assert p.min_rounds == 2
+        assert p.max_rounds == 3
+
     def test_frozen(self):
-        p = Preset(name="t", description="", rounds=1, analysts=(), editors=())
+        p = Preset(name="t", description="", max_rounds=1, analysts=(), editors=())
         with pytest.raises(AttributeError):
-            p.rounds = 3  # type: ignore[misc]
+            p.max_rounds = 3  # type: ignore[misc]
+
+
+class TestConvergenceResult:
+    def test_create(self):
+        r = ConvergenceResult(should_continue=True, reason="Positions diverging", round_number=1)
+        assert r.should_continue is True
+        assert r.reason == "Positions diverging"
+        assert r.round_number == 1
+
+    def test_frozen(self):
+        r = ConvergenceResult(should_continue=False, reason="Converged", round_number=2)
+        with pytest.raises(AttributeError):
+            r.should_continue = True  # type: ignore[misc]
+
+    def test_stop(self):
+        r = ConvergenceResult(should_continue=False, reason="All agreed", round_number=1)
+        assert r.should_continue is False
 
 
 class TestConfig:
     def test_create(self):
-        preset = Preset(name="q", description="", rounds=1, analysts=("a",), editors=("b",))
+        preset = Preset(name="q", description="", max_rounds=1, analysts=("a",), editors=("b",))
         c = Config(
             default_preset="q",
             rounds=2,
@@ -92,6 +122,8 @@ class TestDeliberationEvent:
             "agent_completed",
             "round_started",
             "round_completed",
+            "convergence_started",
+            "convergence_completed",
             "editorial_started",
             "editorial_completed",
             "deliberation_completed",

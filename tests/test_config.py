@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 CONFIG_PATH = PROJECT_ROOT / "config.yaml"
 PERSONAS_DIR = PROJECT_ROOT / "personas"
 
-REQUIRED_PRESET_FIELDS = ["description", "rounds", "analysts", "editors"]
+REQUIRED_PRESET_FIELDS = ["description", "max_rounds", "analysts", "editors"]
 
 
 def load_config():
@@ -130,7 +130,7 @@ class TestPresets:
 
     def test_quick_has_fewer_rounds(self):
         config = load_config()
-        assert config["presets"]["quick"]["rounds"] < config["presets"]["balanced"]["rounds"]
+        assert config["presets"]["quick"]["max_rounds"] < config["presets"]["balanced"]["max_rounds"]
 
 
 class TestCodePresets:
@@ -152,7 +152,7 @@ class TestCodePresets:
 
     def test_code_quick_has_fewer_rounds(self):
         config = load_config()
-        assert config["presets"]["code_quick"]["rounds"] < config["presets"]["code_balanced"]["rounds"]
+        assert config["presets"]["code_quick"]["max_rounds"] < config["presets"]["code_balanced"]["max_rounds"]
 
     def test_code_presets_use_code_synthesizer(self):
         config = load_config()

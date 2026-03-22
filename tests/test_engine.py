@@ -106,13 +106,13 @@ class TestQuickPreset:
 
     @pytest.mark.asyncio
     async def test_correct_agent_count(self, config: Config, personas: dict[str, Persona]) -> None:
-        """AC-1: quick = 3 analyst calls + 2 editor calls = 5 total."""
+        """AC-1: quick = 3 analyst calls + 2 editor calls = 5 total (no convergence: min==max)."""
         tracker = make_mock_subprocess()
         with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "quick")
 
-        assert tracker.call_count == 6  # 1 intake + 3 analysts + 2 editors
+        assert tracker.call_count == 6  # 1 intake + 3 analysts + 2 editors (no convergence)
 
     @pytest.mark.asyncio
     async def test_result_structure(self, config: Config, personas: dict[str, Persona]) -> None:
@@ -146,13 +146,13 @@ class TestBalancedPreset:
 
     @pytest.mark.asyncio
     async def test_correct_agent_count(self, config: Config, personas: dict[str, Persona]) -> None:
-        """AC-1: balanced = 5 analysts x 2 rounds + 4 editors = 14 total."""
+        """AC-1: balanced = 5 analysts x 2 rounds + 1 convergence + 4 editors."""
         tracker = make_mock_subprocess()
         with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        assert tracker.call_count == 15  # 1 intake + 5x2 analysts + 4 editors
+        assert tracker.call_count == 16  # 1 intake + 5 R1 + 1 convergence + 5 R2 + 4 editors
 
     @pytest.mark.asyncio
     async def test_two_rounds(self, config: Config, personas: dict[str, Persona]) -> None:
@@ -239,8 +239,8 @@ class TestRound2FullOutput:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        # Calls 7-11 are Round 2 (call 0=intake, calls 1-5 are Round 1)
-        round2_calls = tracker.calls[6:11]
+        # Calls 8-12 are Round 2 (call 0=intake, calls 1-5=R1, call 6=convergence)
+        round2_calls = tracker.calls[7:12]
 
         for call in round2_calls:
             prompt = call["process"].stdin_text
@@ -258,8 +258,8 @@ class TestRound2FullOutput:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        # Check a Round 2 call has the full 500-char output
-        round2_call = tracker.calls[6]
+        # Check a Round 2 call has the full 500-char output (index 7: after intake+R1+convergence)
+        round2_call = tracker.calls[7]
         prompt = round2_call["process"].stdin_text
         assert long_output in prompt
 
@@ -451,7 +451,7 @@ class TestMissingPersonaWarning:
             model="opus",
             presets={
                 "test": Preset(
-                    name="test", description="", rounds=1,
+                    name="test", description="", max_rounds=1,
                     analysts=("occam", "ghost-analyst"),
                     editors=("samenvatter",),
                 ),
@@ -477,7 +477,7 @@ class TestMissingPersonaWarning:
             model="opus",
             presets={
                 "test": Preset(
-                    name="test", description="", rounds=1,
+                    name="test", description="", max_rounds=1,
                     analysts=("occam",),
                     editors=("ghost-editor", "samenvatter"),
                 ),
@@ -520,7 +520,7 @@ class TestSummarizerConfig:
             model="opus",
             presets={
                 "test": Preset(
-                    name="test", description="", rounds=1,
+                    name="test", description="", max_rounds=1,
                     analysts=("occam",),
                     editors=("marx", "samenvatter"),
                     summarizer=None,
@@ -840,7 +840,7 @@ class TestSubprocessTimeout:
             model="opus",
             presets={
                 "test": Preset(
-                    name="test", description="", rounds=1,
+                    name="test", description="", max_rounds=1,
                     analysts=("occam",),
                     editors=("samenvatter",),
                 ),
@@ -880,7 +880,7 @@ class TestSubprocessTimeout:
             model="opus",
             presets={
                 "test": Preset(
-                    name="test", description="", rounds=1,
+                    name="test", description="", max_rounds=1,
                     analysts=("occam",),
                     editors=("samenvatter",),
                 ),
@@ -919,7 +919,7 @@ class TestConcurrencyLimit:
             model="opus",
             presets={
                 "test": Preset(
-                    name="test", description="", rounds=1,
+                    name="test", description="", max_rounds=1,
                     analysts=("occam", "holmes", "machiavelli", "socrates", "da-vinci"),
                     editors=("samenvatter",),
                 ),
@@ -1107,3 +1107,161 @@ class TestParseIntakeOutput:
         result = DeliberationEngine._parse_intake_output("")
         assert result["is_clear"] == "yes"
         assert result["brief"] == ""
+
+
+class TestParseConvergenceOutput:
+    """Unit tests for _parse_convergence_output."""
+
+    def test_parse_continue(self) -> None:
+        output = "CONTINUE: yes\nREASON: New perspectives still emerging"
+        result = DeliberationEngine._parse_convergence_output(output)
+        assert result["continue"] == "yes"
+        assert result["reason"] == "New perspectives still emerging"
+
+    def test_parse_stop(self) -> None:
+        output = "CONTINUE: no\nREASON: Positions have solidified"
+        result = DeliberationEngine._parse_convergence_output(output)
+        assert result["continue"] == "no"
+        assert result["reason"] == "Positions have solidified"
+
+    def test_parse_fallback_on_garbage(self) -> None:
+        output = "Some random output without structure"
+        result = DeliberationEngine._parse_convergence_output(output)
+        assert result["continue"] == "yes"  # default
+        assert result["reason"] == "Some random output without structure"
+
+    def test_parse_empty_output(self) -> None:
+        result = DeliberationEngine._parse_convergence_output("")
+        assert result["continue"] == "yes"
+        assert result["reason"] == ""
+
+
+class TestConvergencePhase:
+    """Tests for the adaptive rounds convergence phase."""
+
+    @pytest.mark.asyncio
+    async def test_no_convergence_when_min_equals_max(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Quick preset (min==max==1) skips convergence entirely."""
+        events: list[DeliberationEvent] = []
+
+        async def collect(event: DeliberationEvent) -> None:
+            events.append(event)
+
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=collect)
+            await engine.run("Test question", "quick")
+
+        types = [e.type for e in events]
+        assert "convergence_started" not in types
+        assert "convergence_completed" not in types
+
+    @pytest.mark.asyncio
+    async def test_convergence_events_emitted_for_balanced(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Balanced preset emits convergence events after R1."""
+        events: list[DeliberationEvent] = []
+
+        async def collect(event: DeliberationEvent) -> None:
+            events.append(event)
+
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=collect)
+            await engine.run("Test question", "balanced")
+
+        types = [e.type for e in events]
+        assert "convergence_started" in types
+        assert "convergence_completed" in types
+        # Convergence should come after first round_completed, before second round_started
+        conv_idx = types.index("convergence_started")
+        round_completed_indices = [i for i, t in enumerate(types) if t == "round_completed"]
+        round_started_indices = [i for i, t in enumerate(types) if t == "round_started"]
+        assert conv_idx > round_completed_indices[0]  # after first round completes
+        assert conv_idx < round_started_indices[1]  # before second round starts
+
+    @pytest.mark.asyncio
+    async def test_early_stop_when_converged(self, personas: dict[str, Persona]) -> None:
+        """If convergence says stop after R1, only 1 round runs."""
+        mini_config = Config(
+            default_preset="test",
+            rounds=2,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="", max_rounds=3, min_rounds=1,
+                    analysts=("occam", "holmes"),
+                    editors=("samenvatter",),
+                    summarizer="samenvatter",
+                ),
+            },
+        )
+
+        async def stop_convergence(self_engine, system_prompt, prompt, model):
+            if "convergence analyst" in system_prompt.lower():
+                return "CONTINUE: no\nREASON: All positions have converged"
+            return "Mock output"
+
+        tracker = make_mock_subprocess()
+        with (
+            patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
+            patch.object(DeliberationEngine, "_call_functional_agent", stop_convergence),
+        ):
+            engine = DeliberationEngine(mini_config, personas)
+            result = await engine.run("Test", "test")
+
+        # Only 1 round should have run (convergence stopped after R1)
+        assert 1 in result.rounds
+        assert 2 not in result.rounds
+
+    @pytest.mark.asyncio
+    async def test_max_rounds_enforced(self, personas: dict[str, Persona]) -> None:
+        """Even if convergence always says continue, max_rounds is respected."""
+        mini_config = Config(
+            default_preset="test",
+            rounds=2,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="", max_rounds=2, min_rounds=1,
+                    analysts=("occam",),
+                    editors=("samenvatter",),
+                    summarizer="samenvatter",
+                ),
+            },
+        )
+
+        async def always_continue(self_engine, system_prompt, prompt, model):
+            if "convergence analyst" in system_prompt.lower():
+                return "CONTINUE: yes\nREASON: Still diverging"
+            return "Mock output"
+
+        tracker = make_mock_subprocess()
+        with (
+            patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
+            patch.object(DeliberationEngine, "_call_functional_agent", always_continue),
+        ):
+            engine = DeliberationEngine(mini_config, personas)
+            result = await engine.run("Test", "test")
+
+        # Exactly 2 rounds (max enforced)
+        assert 1 in result.rounds
+        assert 2 in result.rounds
+        assert 3 not in result.rounds
+
+    @pytest.mark.asyncio
+    async def test_convergence_completed_includes_data(self, config: Config, personas: dict[str, Persona]) -> None:
+        """convergence_completed event includes should_continue and reason."""
+        events: list[DeliberationEvent] = []
+
+        async def collect(event: DeliberationEvent) -> None:
+            events.append(event)
+
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=collect)
+            await engine.run("Test question", "balanced")
+
+        conv_events = [e for e in events if e.type == "convergence_completed"]
+        assert len(conv_events) >= 1
+        assert "should_continue" in conv_events[0].data
+        assert "reason" in conv_events[0].data

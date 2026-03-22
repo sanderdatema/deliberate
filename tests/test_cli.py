@@ -53,7 +53,7 @@ class TestResultFormatter:
             preset=Preset(
                 name="quick",
                 description="Quick analysis",
-                rounds=1,
+                max_rounds=1,
                 analysts=("occam", "holmes", "lupin"),
                 editors=("marx", "samenvatter"),
             ),

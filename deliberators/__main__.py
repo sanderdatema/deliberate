@@ -36,6 +36,12 @@ def _print_event(event: DeliberationEvent) -> None:
             print(f"    ✓ {event.agent_name}{rnd}", file=sys.stderr)
         case "round_completed":
             print(f"  Ronde {event.round_number} compleet", file=sys.stderr)
+        case "convergence_started":
+            print(f"  Convergentie check...", file=sys.stderr)
+        case "convergence_completed":
+            action = "doorgaan" if event.data.get("should_continue") else "stoppen"
+            reason = event.data.get("reason", "")
+            print(f"  Convergentie: {action}" + (f" — {reason}" if reason else ""), file=sys.stderr)
         case "editorial_started":
             print("  Redactionele fase...", file=sys.stderr)
         case "editorial_completed":

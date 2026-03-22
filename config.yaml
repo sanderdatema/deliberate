@@ -7,34 +7,40 @@ max_concurrent: 10
 presets:
   quick:
     description: "Snelle analyse — 3 analisten + 2 editors, 1 ronde"
-    rounds: 1
+    min_rounds: 1
+    max_rounds: 1
     analysts: [occam, holmes, machiavelli]
     editors: [marx, samenvatter]
     summarizer: samenvatter
   balanced:
     description: "Standaard deliberatie — 5 analisten + 4 editors, 2 rondes"
-    rounds: 2
+    min_rounds: 1
+    max_rounds: 2
     analysts: [socrates, occam, da-vinci, holmes, machiavelli]
     editors: [marx, hegel, arendt, samenvatter]
     summarizer: samenvatter
   deep:
-    description: "Diepgaande analyse — 8 analisten + 4 editors, 2 rondes"
-    rounds: 2
+    description: "Diepgaande analyse — 8 analisten + 4 editors, max 3 rondes"
+    min_rounds: 1
+    max_rounds: 3
     analysts: [socrates, occam, da-vinci, holmes, machiavelli, templar, tubman, ibn-khaldun]
     editors: [marx, hegel, arendt, samenvatter]
     summarizer: samenvatter
   code_quick:
     description: "Snelle code review — 3 analisten + 1 editor, 1 ronde"
-    rounds: 1
+    min_rounds: 1
+    max_rounds: 1
     analysts: [linus, schneier, hopper]
     editors: [code-synthesizer]
   code_balanced:
     description: "Standaard code review — 5 analisten + 1 editor, 2 rondes"
-    rounds: 2
+    min_rounds: 1
+    max_rounds: 2
     analysts: [linus, kent-beck, fowler, schneier, hopper]
     editors: [code-synthesizer]
   code_deep:
-    description: "Diepgaande code review — 9 analisten + 1 editor, 2 rondes"
-    rounds: 2
+    description: "Diepgaande code review — 9 analisten + 1 editor, max 3 rondes"
+    min_rounds: 1
+    max_rounds: 3
     analysts: [linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, knuth, hopper]
     editors: [code-synthesizer]

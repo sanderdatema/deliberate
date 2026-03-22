@@ -11,7 +11,7 @@ from typing import Any, Awaitable, Callable
 logger = logging.getLogger(__name__)
 
 from deliberators.loader import ConfigLoader, PersonaLoader
-from deliberators.models import Config, DeliberationEvent, IntakeBrief, Persona, Preset
+from deliberators.models import Config, ConvergenceResult, DeliberationEvent, IntakeBrief, Persona, Preset
 
 EventCallback = Callable[[DeliberationEvent], Awaitable[None] | None]
 TextCallback = Callable[[str, str], Awaitable[None] | None]  # (agent_name, text_delta)
@@ -37,6 +37,22 @@ dimensions to explore. Write in the same language as the question.]
 """
 
 _MAX_CLARIFICATION_ROUNDS = 3
+
+_CONVERGENCE_SYSTEM_PROMPT = """\
+You are a convergence analyst for a multi-perspective deliberation system.
+After each analyst round, you evaluate whether continuing with another round \
+would add significant value.
+
+Analyze the round output for:
+- Are new perspectives still emerging, or have positions solidified?
+- Are there significant unresolved disagreements worth exploring further?
+- Would another round likely produce genuinely new insights?
+- Have the analysts already covered the key dimensions of the question?
+
+Output EXACTLY this structure (no other text before or after):
+CONTINUE: yes|no
+REASON: [1-2 sentences explaining your assessment]
+"""
 
 
 @dataclass
@@ -89,14 +105,24 @@ class DeliberationEngine:
             intake_brief = await self._run_intake(question)
             result.intake_brief = intake_brief
 
-        # Analyst rounds
-        for round_num in range(1, preset.rounds + 1):
+        # Analyst rounds (adaptive: min_rounds guaranteed, then convergence check)
+        round_num = 0
+        while round_num < preset.max_rounds:
+            round_num += 1
             prior_output = result.rounds.get(round_num - 1) if round_num > 1 else None
             round_output = await self._run_analyst_round(
                 round_num, preset.analysts, question, prior_output,
                 code_context, intake_brief,
             )
             result.rounds[round_num] = round_output
+
+            # Convergence check: after min_rounds, before max_rounds
+            if round_num >= preset.min_rounds and round_num < preset.max_rounds:
+                convergence = await self._run_convergence_check(
+                    round_num, round_output, intake_brief,
+                )
+                if not convergence.should_continue:
+                    break
 
         # Editorial round
         await self._emit(DeliberationEvent(type="editorial_started"))
@@ -324,6 +350,64 @@ class DeliberationEngine:
         ))
 
         return brief
+
+    @staticmethod
+    def _parse_convergence_output(output: str) -> dict[str, str]:
+        """Parse structured convergence agent output into fields."""
+        result = {"continue": "yes", "reason": ""}
+        for line in output.splitlines():
+            stripped = line.strip()
+            if stripped.upper().startswith("CONTINUE:"):
+                value = stripped.split(":", 1)[1].strip().lower()
+                result["continue"] = "yes" if value.startswith("yes") else "no"
+            elif stripped.upper().startswith("REASON:"):
+                result["reason"] = stripped.split(":", 1)[1].strip()
+        if not result["reason"] and output.strip():
+            result["reason"] = output.strip()[:200]
+        return result
+
+    async def _run_convergence_check(
+        self,
+        round_num: int,
+        round_output: dict[str, str],
+        intake_brief: IntakeBrief | None = None,
+    ) -> ConvergenceResult:
+        """Check whether another analyst round would add value."""
+        await self._emit(DeliberationEvent(type="convergence_started", round_number=round_num))
+
+        perspectives = "\n\n".join(
+            f"### {name}\n{output}" for name, output in round_output.items()
+        )
+        prompt_parts = []
+        if intake_brief and intake_brief.summary:
+            prompt_parts.append(f"QUESTION CONTEXT:\n{intake_brief.summary}")
+        prompt_parts.append(f"ROUND {round_num} OUTPUT:\n{perspectives}")
+        prompt_parts.append(
+            f"Should the deliberation continue to Round {round_num + 1}?"
+        )
+        prompt = "\n\n".join(prompt_parts)
+
+        output = await self._call_functional_agent(
+            _CONVERGENCE_SYSTEM_PROMPT, prompt, self.config.model,
+        )
+        parsed = self._parse_convergence_output(output)
+
+        should_continue = parsed["continue"] == "yes"
+        reason = parsed.get("reason", "")
+
+        convergence = ConvergenceResult(
+            should_continue=should_continue,
+            reason=reason,
+            round_number=round_num,
+        )
+
+        await self._emit(DeliberationEvent(
+            type="convergence_completed",
+            round_number=round_num,
+            data={"should_continue": should_continue, "reason": reason},
+        ))
+
+        return convergence
 
     def _build_analyst_prompt(
         self,

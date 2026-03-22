@@ -26,9 +26,10 @@ class Preset:
 
     name: str
     description: str
-    rounds: int
+    max_rounds: int
     analysts: tuple[str, ...]
     editors: tuple[str, ...]
+    min_rounds: int = 1
     summarizer: str | None = None
 
 
@@ -42,6 +43,15 @@ class Config:
     presets: dict[str, Preset]
     timeout: int = 120
     max_concurrent: int = 10
+
+
+@dataclass(frozen=True)
+class ConvergenceResult:
+    """Result of a convergence check after an analyst round."""
+
+    should_continue: bool
+    reason: str
+    round_number: int
 
 
 @dataclass(frozen=True)
@@ -66,6 +76,8 @@ class DeliberationEvent:
         "agent_completed",
         "round_started",
         "round_completed",
+        "convergence_started",
+        "convergence_completed",
         "editorial_started",
         "editorial_completed",
         "deliberation_completed",

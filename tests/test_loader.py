@@ -272,19 +272,22 @@ class TestConfigLoader:
         assert "samenvatter" in quick.editors
 
     def test_quick_preset_one_round(self, config):
-        assert config.presets["quick"].rounds == 1
+        assert config.presets["quick"].max_rounds == 1
+        assert config.presets["quick"].min_rounds == 1
 
     def test_balanced_preset(self, config):
         balanced = config.presets["balanced"]
         assert len(balanced.analysts) == 5
         assert len(balanced.editors) == 4  # marx, hegel, arendt, samenvatter
-        assert balanced.rounds == 2
+        assert balanced.max_rounds == 2
+        assert balanced.min_rounds == 1
 
     def test_deep_preset(self, config):
         deep = config.presets["deep"]
         assert len(deep.analysts) == 8
         assert len(deep.editors) == 4
-        assert deep.rounds == 2
+        assert deep.max_rounds == 3
+        assert deep.min_rounds == 1
 
     def test_get_preset_valid(self, config):
         preset = ConfigLoader.get_preset(config, "balanced")
@@ -327,7 +330,7 @@ class TestValidatePresetPersonas:
                 "test": Preset(
                     name="test",
                     description="Test preset",
-                    rounds=1,
+                    max_rounds=1,
                     analysts=("nonexistent-persona",),
                     editors=(),
                 ),
@@ -348,7 +351,7 @@ class TestValidatePresetPersonas:
                 "test": Preset(
                     name="test",
                     description="Test preset",
-                    rounds=1,
+                    max_rounds=1,
                     analysts=(),
                     editors=("ghost-editor",),
                 ),
@@ -369,7 +372,7 @@ class TestValidatePresetPersonas:
                 "broken": Preset(
                     name="broken",
                     description="Broken preset",
-                    rounds=1,
+                    max_rounds=1,
                     analysts=("missing",),
                     editors=(),
                 ),

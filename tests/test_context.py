@@ -141,6 +141,46 @@ class TestPathSanitization:
         assert "passwd" not in result
 
 
+class TestSymlinkDetection:
+    """Symlinks are rejected to prevent reading unintended files."""
+
+    def test_symlink_skipped(self, tmp_path):
+        """A symlink to a file is skipped."""
+        real = tmp_path / "real.py"
+        real.write_text("real content")
+        link = tmp_path / "link.py"
+        link.symlink_to(real)
+
+        result = build_code_context([link])
+        assert result is None
+
+    def test_symlink_skipped_but_real_files_kept(self, tmp_path):
+        """Symlinks are skipped while real files are kept."""
+        real = tmp_path / "real.py"
+        real.write_text("good content")
+        link = tmp_path / "link.py"
+        link.symlink_to(real)
+
+        result = build_code_context([link, real])
+        assert result is not None
+        assert "good content" in result
+        # Only one file section (the real file)
+        assert result.count("## File:") == 1
+
+    def test_symlink_to_outside_skipped(self, tmp_path):
+        """A symlink pointing outside the directory is skipped."""
+        import os
+        target = tmp_path / "outside" / "secret.txt"
+        target.parent.mkdir()
+        target.write_text("secret data")
+        link = tmp_path / "project" / "innocent.py"
+        link.parent.mkdir()
+        link.symlink_to(target)
+
+        result = build_code_context([link])
+        assert result is None
+
+
 class TestFilesizeLimit:
     """AC-2: Files exceeding MAX_FILE_SIZE are skipped."""
 

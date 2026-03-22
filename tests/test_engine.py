@@ -1125,6 +1125,12 @@ class TestParseIntakeOutput:
         assert result["is_clear"] == "yes"
         assert result["brief"] == ""
 
+    def test_parse_garbage_logs_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        import logging
+        with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
+            DeliberationEngine._parse_intake_output("totally unparseable garbage")
+        assert any("Intake: no fields parsed" in r.message for r in caplog.records)
+
 
 class TestParseConvergenceOutput:
     """Unit tests for _parse_convergence_output."""
@@ -1151,6 +1157,12 @@ class TestParseConvergenceOutput:
         result = DeliberationEngine._parse_convergence_output("")
         assert result["continue"] == "yes"
         assert result["reason"] == ""
+
+    def test_parse_garbage_logs_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        import logging
+        with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
+            DeliberationEngine._parse_convergence_output("totally unparseable garbage")
+        assert any("Convergence: no fields parsed" in r.message for r in caplog.records)
 
 
 class TestConvergencePhase:
@@ -1330,6 +1342,23 @@ class TestParseTeamSelectionOutput:
         assert analysts == []
         assert editors == []
         assert reason == ""
+
+    def test_parse_garbage_logs_warning(self, mock_personas: dict[str, Persona], caplog: pytest.LogCaptureFixture) -> None:
+        import logging
+        with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
+            DeliberationEngine._parse_team_selection_output("garbage output", mock_personas)
+        assert any("Team selection: no fields parsed" in r.message for r in caplog.records)
+
+    def test_size_mismatch_logs_warning(self, mock_personas: dict[str, Persona], caplog: pytest.LogCaptureFixture) -> None:
+        import logging
+        output = "ANALYSTS: socrates, occam\nEDITORS: marx\nREASON: test"
+        with caplog.at_level(logging.WARNING, logger="deliberators.engine"):
+            DeliberationEngine._parse_team_selection_output(
+                output, mock_personas, expected_analysts=5, expected_editors=2,
+            )
+        warnings = [r.message for r in caplog.records]
+        assert any("expected 5 analysts, got 2" in w for w in warnings)
+        assert any("expected 2 editors, got 1" in w for w in warnings)
 
 
 class TestTeamSelection:

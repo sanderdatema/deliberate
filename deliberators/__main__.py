@@ -198,27 +198,30 @@ async def _run(args: argparse.Namespace) -> int:
             return 1
         print(f"Vervolg op: {prior_decision.question[:60]}", file=sys.stderr)
 
-    result = await engine.run(
-        args.question, args.preset, code_context=code_context,
-        prior_decision=prior_decision,
-    )
+    try:
+        result = await engine.run(
+            args.question, args.preset, code_context=code_context,
+            prior_decision=prior_decision,
+        )
 
-    formatter = ResultFormatter(personas)
-    formatted = formatter.format(result, verbose=args.verbose)
+        formatter = ResultFormatter(personas)
+        formatted = formatter.format(result, verbose=args.verbose)
 
-    # Save decision record
-    follow_up_of = prior_decision.id if prior_decision else None
-    record = to_decision_record(result, follow_up_of=follow_up_of)
-    store = DecisionStore()
-    store.save(record)
-    print(f"Besluit opgeslagen: {record.id[:8]}", file=sys.stderr)
+        # Save decision record
+        follow_up_of = prior_decision.id if prior_decision else None
+        record = to_decision_record(result, follow_up_of=follow_up_of)
+        store = DecisionStore()
+        store.save(record)
+        print(f"Besluit opgeslagen: {record.id[:8]}", file=sys.stderr)
 
-    if web:
-        await web.push_result(formatted)
-        await web.close()
+        if web:
+            await web.push_result(formatted)
 
-    print(formatted)
-    return 0
+        print(formatted)
+        return 0
+    finally:
+        if web:
+            await web.close()
 
 
 def main() -> None:

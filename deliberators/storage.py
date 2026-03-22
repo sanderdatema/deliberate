@@ -25,6 +25,8 @@ class DecisionStore:
 
     def load(self, decision_id: str) -> DecisionRecord | None:
         """Load a DecisionRecord by full or prefix ID. Returns None if not found."""
+        if not decision_id or not decision_id.strip():
+            return None
         if not self._base_dir.exists():
             return None
 

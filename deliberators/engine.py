@@ -390,15 +390,21 @@ class DeliberationEngine:
     def _parse_intake_output(output: str) -> dict[str, str]:
         """Parse structured intake agent output into fields."""
         result = {"is_clear": "yes", "clarification_question": "none", "brief": ""}
+        parsed_any = False
         for line in output.splitlines():
             stripped = line.strip()
             if stripped.upper().startswith("IS_CLEAR:"):
                 value = stripped.split(":", 1)[1].strip().lower()
                 result["is_clear"] = "yes" if value.startswith("yes") else "no"
+                parsed_any = True
             elif stripped.upper().startswith("CLARIFICATION_QUESTION:"):
                 result["clarification_question"] = stripped.split(":", 1)[1].strip()
+                parsed_any = True
             elif stripped.upper().startswith("BRIEF:"):
                 result["brief"] = stripped.split(":", 1)[1].strip()
+                parsed_any = True
+        if not parsed_any:
+            logger.warning("Intake: no fields parsed from output: %.200s", output)
         # Fallback: if brief is empty, use first 500 chars of output
         if not result["brief"] and output.strip():
             result["brief"] = output.strip()[:500]
@@ -470,26 +476,45 @@ class DeliberationEngine:
     @staticmethod
     def _parse_team_selection_output(
         output: str, available_personas: dict[str, Persona],
+        expected_analysts: int = 0, expected_editors: int = 0,
     ) -> tuple[list[str], list[str], str]:
         """Parse team selection output into (analysts, editors, reason)."""
         analysts: list[str] = []
         editors: list[str] = []
         reason = ""
+        parsed_any = False
 
         for line in output.splitlines():
             stripped = line.strip()
             if stripped.upper().startswith("ANALYSTS:"):
                 names = stripped.split(":", 1)[1].strip()
                 analysts = [n.strip() for n in names.split(",") if n.strip()]
+                parsed_any = True
             elif stripped.upper().startswith("EDITORS:"):
                 names = stripped.split(":", 1)[1].strip()
                 editors = [n.strip() for n in names.split(",") if n.strip()]
+                parsed_any = True
             elif stripped.upper().startswith("REASON:"):
                 reason = stripped.split(":", 1)[1].strip()
+                parsed_any = True
+
+        if not parsed_any:
+            logger.warning("Team selection: no fields parsed from output: %.200s", output)
 
         # Validate: only keep names that exist in personas
         valid_analysts = [n for n in analysts if n in available_personas and available_personas[n].role == "analyst"]
         valid_editors = [n for n in editors if n in available_personas and available_personas[n].role == "editor"]
+
+        if expected_analysts and len(valid_analysts) != expected_analysts:
+            logger.warning(
+                "Team selection: expected %d analysts, got %d",
+                expected_analysts, len(valid_analysts),
+            )
+        if expected_editors and len(valid_editors) != expected_editors:
+            logger.warning(
+                "Team selection: expected %d editors, got %d",
+                expected_editors, len(valid_editors),
+            )
 
         return valid_analysts, valid_editors, reason
 
@@ -521,7 +546,10 @@ class DeliberationEngine:
             _TEAM_SELECTION_SYSTEM_PROMPT, prompt, self.config.model,
         )
 
-        analysts, editors, reason = self._parse_team_selection_output(output, self.personas)
+        analysts, editors, reason = self._parse_team_selection_output(
+            output, self.personas,
+            expected_analysts=preset.team_size, expected_editors=preset.editor_count,
+        )
 
         # Fallback: if selection is empty or insufficient, use preset overrides
         if not analysts or not editors:
@@ -549,13 +577,18 @@ class DeliberationEngine:
     def _parse_convergence_output(output: str) -> dict[str, str]:
         """Parse structured convergence agent output into fields."""
         result = {"continue": "yes", "reason": ""}
+        parsed_any = False
         for line in output.splitlines():
             stripped = line.strip()
             if stripped.upper().startswith("CONTINUE:"):
                 value = stripped.split(":", 1)[1].strip().lower()
                 result["continue"] = "yes" if value.startswith("yes") else "no"
+                parsed_any = True
             elif stripped.upper().startswith("REASON:"):
                 result["reason"] = stripped.split(":", 1)[1].strip()
+                parsed_any = True
+        if not parsed_any:
+            logger.warning("Convergence: no fields parsed from output: %.200s", output)
         if not result["reason"] and output.strip():
             result["reason"] = output.strip()[:200]
         return result

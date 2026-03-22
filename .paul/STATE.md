@@ -11,9 +11,9 @@ See: .paul/PROJECT.md (updated 2026-03-22)
 
 Milestone: v0.7 Kwaliteit & Beknoptheid
 Phase: 24 of 25 (Robuustheid)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-03-22 — Phase 23 complete
+Plan: 24-01 created
+Status: Ready for APPLY
+Last activity: 2026-03-22 — Phase 24 plan created
 
 Progress:
 - v0.1: [##########] 100%
@@ -29,7 +29,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Ready for Phase 24 PLAN]
+  ✓        ○        ○     [Plan 24-01 created, ready for APPLY]
 ```
 
 ## Accumulated Context
@@ -43,15 +43,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Phase 23: Rapportage Inkorten — --verbose flag, compact output, synthesis constraints
 
 ### Git State
-Last commit: pending
+Last commit: 69fb258
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-03-22
-Stopped at: Phase 23 complete
-Next action: /paul:plan for Phase 24
-Resume file: .paul/phases/23-rapportage-inkorten/23-01-SUMMARY.md
+Stopped at: Phase 24 plan created
+Next action: /paul:apply for Phase 24-01
+Resume file: .paul/phases/24-robuustheid/24-01-PLAN.md
 
 ---
 *STATE.md -- Updated after every significant action*

@@ -59,6 +59,16 @@ class TestDecisionStore:
         store = DecisionStore(base_dir=tmp_path)
         assert store.load("nonexistent") is None
 
+    def test_load_empty_id_returns_none(self, tmp_path: Path) -> None:
+        store = DecisionStore(base_dir=tmp_path)
+        store.save(_make_record())
+        assert store.load("") is None
+
+    def test_load_whitespace_id_returns_none(self, tmp_path: Path) -> None:
+        store = DecisionStore(base_dir=tmp_path)
+        store.save(_make_record())
+        assert store.load("   ") is None
+
     def test_list_recent_ordered_newest_first(self, tmp_path: Path) -> None:
         store = DecisionStore(base_dir=tmp_path)
         store.save(_make_record("aaa", "First question"))

@@ -122,7 +122,7 @@ Phases: 3 of 3 complete
 
 ### v0.6 Adaptive Deliberation
 Status: **In progress**
-Phases: 5 of 7 complete
+Phases: 6 of 7 complete
 
 Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model routing, intake fase, adaptive rounds, genderdiversiteit, dynamische teamselectie, decision memory, en thematische rapportage.
 
@@ -133,7 +133,7 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 | 18 | Adaptive Rounds | 1 | Complete | 2026-03-22 |
 | 19 | Pool Expansion | 2 | Complete | 2026-03-22 |
 | 20 | Dynamic Team Selection | 1 | Complete | 2026-03-22 |
-| 21 | Decision Memory | 1 | Not started | |
+| 21 | Decision Memory | 1 | Complete | 2026-03-22 |
 | 22 | Rapportage Redesign | 1 | Not started | |
 
 ## Phase Details (v0.6)
@@ -159,10 +159,8 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 ### Phase 20: Dynamic Team Selection ✅
 - [x] 20-01: TeamSelectionAgent + unified /deliberate command + preset as pool-hint (2026-03-22)
 
-### Phase 21: Decision Memory
-**Focus:** Structured JSON opslag van deliberaties. CLI flags voor history en follow-up.
-
-**Depends on:** Phase 16 (model routing)
+### Phase 21: Decision Memory ✅
+- [x] 21-01: DecisionStore + --history + --followup + auto-save (2026-03-22)
 
 ### Phase 22: Rapportage Redesign
 **Focus:** Thematische rapportage i.p.v. per-persona output. Geintegreerd document met landschap, spanningsveld, blinde vlekken, actiepunten.
@@ -171,4 +169,4 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 
 ---
 *Roadmap created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 20 complete — dynamic team selection + unified command*
+*Last updated: 2026-03-22 after Phase 21 complete — decision memory*

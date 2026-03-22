@@ -68,6 +68,21 @@ class IntakeBrief:
 
 
 @dataclass(frozen=True)
+class DecisionRecord:
+    """A stored deliberation result for decision memory."""
+
+    id: str
+    timestamp: str
+    question: str
+    preset_name: str
+    analysts: tuple[str, ...]
+    editors: tuple[str, ...]
+    summary: str
+    key_positions: dict[str, str]
+    follow_up_of: str | None = None
+
+
+@dataclass(frozen=True)
 class DeliberationEvent:
     """An event emitted during deliberation for streaming/UI."""
 

@@ -13,7 +13,7 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 | Attribute | Value |
 |-----------|-------|
 | Version | 0.6.0-dev |
-| Status | Phase 20 complete — dynamic team selection + unified command |
+| Status | Phase 21 complete — decision memory |
 | Last Updated | 2026-03-22 |
 
 ## Requirements
@@ -108,7 +108,7 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 - [x] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt (Phase 18)
 - [x] Pool Expansion: 54 persona's met domains veld — Clarke, Hamilton, Liskov, Lovelace, Lamarr, Turing, Lupin, Thorbecke, Shakespeare, Kahneman, Taleb, etc. Genderdiversiteit: 23F/28M/3N (Phase 19)
 - [x] Dynamic Team Selection: TeamSelectionAgent selecteert uit 54-pool, unified /deliberate command, presets als team shape hints, ≥40% genderbalans (Phase 20)
-- [ ] DecisionMemory: JSON opslag van deliberaties, --history/--followup CLI flags (Phase 21)
+- [x] DecisionMemory: JSON opslag in ~/.local/share/deliberators/decisions/, --history en --followup CLI flags, auto-save, prefix ID matching (Phase 21)
 - [ ] ThematicFormatter: thematische rapportage i.p.v. per-persona output (Phase 22)
 
 ### Out of Scope
@@ -186,4 +186,4 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 
 ---
 *Created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 20 complete — dynamic team selection + unified command*
+*Last updated: 2026-03-22 after Phase 21 complete — decision memory*

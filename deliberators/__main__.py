@@ -8,10 +8,11 @@ import sys
 from pathlib import Path
 
 from deliberators.context import build_code_context
-from deliberators.engine import DeliberationEngine
+from deliberators.engine import DeliberationEngine, to_decision_record
 from deliberators.formatter import ResultFormatter
 from deliberators.loader import ConfigLoader, PersonaLoader, resolve_config_path, resolve_personas_dir
 from deliberators.models import DeliberationEvent
+from deliberators.storage import DecisionStore
 from deliberators.web_pusher import WebPusher
 
 
@@ -64,6 +65,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "question",
+        nargs="?",
+        default=None,
         help="De vraag om over te delibereren",
     )
     parser.add_argument(
@@ -98,7 +101,37 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="URL",
         help="Push events to web viewer (e.g., http://localhost:8000)",
     )
+    parser.add_argument(
+        "--history",
+        action="store_true",
+        default=False,
+        help="Toon recente deliberaties",
+    )
+    parser.add_argument(
+        "--followup",
+        type=str,
+        default=None,
+        metavar="ID",
+        help="Vervolg op een eerdere deliberatie (ID of prefix)",
+    )
     return parser
+
+
+def _print_history() -> int:
+    """Print recent deliberations and return exit code."""
+    store = DecisionStore()
+    records = store.list_recent()
+    if not records:
+        print("Geen eerdere deliberaties gevonden.", file=sys.stderr)
+        return 0
+    print(f"{'Datum':<22} {'ID':<10} {'Preset':<10} {'Vraag'}")
+    print("-" * 80)
+    for r in records:
+        date = r.timestamp[:19].replace("T", " ")
+        short_id = r.id[:8]
+        question = r.question[:40] + ("..." if len(r.question) > 40 else "")
+        print(f"{date:<22} {short_id:<10} {r.preset_name:<10} {question}")
+    return 0
 
 
 async def _run(args: argparse.Namespace) -> int:
@@ -149,10 +182,30 @@ async def _run(args: argparse.Namespace) -> int:
     if args.files:
         code_context = build_code_context(args.files)
 
-    result = await engine.run(args.question, args.preset, code_context=code_context)
+    # Load prior decision for follow-up
+    prior_decision = None
+    if args.followup:
+        store = DecisionStore()
+        prior_decision = store.load(args.followup)
+        if prior_decision is None:
+            print(f"Besluit '{args.followup}' niet gevonden.", file=sys.stderr)
+            return 1
+        print(f"Vervolg op: {prior_decision.question[:60]}", file=sys.stderr)
+
+    result = await engine.run(
+        args.question, args.preset, code_context=code_context,
+        prior_decision=prior_decision,
+    )
 
     formatter = ResultFormatter(personas)
     formatted = formatter.format(result)
+
+    # Save decision record
+    follow_up_of = prior_decision.id if prior_decision else None
+    record = to_decision_record(result, follow_up_of=follow_up_of)
+    store = DecisionStore()
+    store.save(record)
+    print(f"Besluit opgeslagen: {record.id[:8]}", file=sys.stderr)
 
     if web:
         await web.push_result(formatted)
@@ -166,6 +219,12 @@ def main() -> None:
     """CLI entry point."""
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.history:
+        sys.exit(_print_history())
+
+    if not args.question:
+        parser.error("question is required (unless using --history)")
 
     try:
         exit_code = asyncio.run(_run(args))

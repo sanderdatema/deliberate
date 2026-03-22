@@ -5,15 +5,15 @@
 See: .paul/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door multi-perspectief AI-debat
-**Current focus:** v0.6 Adaptive Deliberation — Phase 20 complete, ready for Phase 21
+**Current focus:** v0.6 Adaptive Deliberation — Phase 21 complete, ready for Phase 22
 
 ## Current Position
 
 Milestone: v0.6 Adaptive Deliberation
-Phase: 20 of 22 (Dynamic Team Selection) — Complete
-Plan: 20-01 completed
+Phase: 21 of 22 (Decision Memory) — Complete
+Plan: 21-01 completed
 Status: UNIFY phase complete — loop closed
-Last activity: 2026-03-22 — Phase 20 complete
+Last activity: 2026-03-22 — Phase 21 complete
 
 Progress:
 - v0.1: [##########] 100%
@@ -21,14 +21,14 @@ Progress:
 - v0.3: [##########] 100%
 - v0.4: [##########] 100%
 - v0.5: [##########] 100%
-- v0.6: [#######___] 71%
+- v0.6: [########__] 86%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN --> APPLY --> UNIFY
-  V        V        V     [Plan 20-01 complete, loop closed]
+  V        V        V     [Plan 21-01 complete, loop closed]
 ```
 
 ## Accumulated Context
@@ -56,17 +56,20 @@ PLAN --> APPLY --> UNIFY
 - Presets definiëren team shape (team_size/editor_count), niet compositie (Phase 20)
 - Gender balance enforcement: ≥40% M/F in selectieprompt (Phase 20)
 - Fixed analyst/editor lists bypassen team selection (backward compat) (Phase 20)
+- Decision memory: JSON files in ~/.local/share/deliberators/decisions/ (Phase 21)
+- Follow-up injects summary + key_positions, niet volledige output (Phase 21)
+- Prefix ID matching voor gebruiksgemak (Phase 21)
 
 ### Git State
-Last commit: pending (Phase 20 complete)
+Last commit: pending (Phase 21 complete)
 Branch: main
 Feature branches merged: none
 
 ## Session Continuity
 
 Last session: 2026-03-22
-Stopped at: Phase 20 complete, loop closed
-Next action: /paul:plan for Phase 21 (Decision Memory)
+Stopped at: Phase 21 complete, loop closed
+Next action: /paul:plan for Phase 22 (Rapportage Redesign)
 Resume file: .paul/ROADMAP.md
 
 ---

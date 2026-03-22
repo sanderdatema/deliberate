@@ -26,6 +26,10 @@ uv run pytest
 # Run via CLI (requires ANTHROPIC_API_KEY env var)
 uv run python -m deliberators "Your question here" --preset balanced
 uv run python -m deliberators "Review this code" --preset balanced --files src/main.py
+
+# Decision memory
+uv run python -m deliberators --history                          # List past deliberations
+uv run python -m deliberators --followup abc12345 "New question" # Follow-up on prior decision
 ```
 
 ## Presets
@@ -65,9 +69,10 @@ personas/               # Thinker definitions (YAML, 54 personas)
   code-synthesizer.yaml
 deliberators/           # Python engine
   engine.py             # Async orchestration + team selection
+  storage.py            # Decision memory (JSON save/load/list)
   context.py            # CodeContextBuilder (file reading)
   loader.py             # YAML persona/config loaders
-  models.py             # Data models (Persona, Config, etc.)
+  models.py             # Data models (Persona, Config, DecisionRecord, etc.)
   formatter.py          # Markdown output formatter
   web.py                # FastAPI WebSocket viewer
   __main__.py           # CLI entry point
@@ -78,6 +83,7 @@ tests/                  # Pytest validation suite
   test_engine.py        # Engine orchestration tests
   test_context.py       # CodeContextBuilder tests
   test_cli.py           # CLI parser and formatter tests
+  test_storage.py       # Decision memory storage tests
   test_quality.py       # Behavioral/quality tests
   test_web.py           # Web viewer tests
 .claude/commands/       # Claude Code slash commands
@@ -94,9 +100,12 @@ tests/                  # Pytest validation suite
 5. Ronde 2+: analysts react to each other (adaptive, convergence check)
 6. Editorial round: editors run **sequentially**
 7. **De Samenvatter:** Concrete, alledaagse taal
-8. Meta-analysis: consensus, dissensie, verschuiving
+8. **Auto-save:** Decision record saved to `~/.local/share/deliberators/decisions/`
+9. Meta-analysis: consensus, dissensie, verschuiving
 
 When `--files` is provided, code context is injected into analyst and editor prompts, and the team selector prioritizes code-focused personas.
+
+When `--followup ID` is provided, the prior deliberation's conclusions are injected into analyst prompts as context.
 
 ## Testing
 
@@ -106,4 +115,5 @@ uv run pytest tests/test_personas.py  # Persona validation
 uv run pytest tests/test_config.py    # Config/preset validation
 uv run pytest tests/test_engine.py    # Engine orchestration
 uv run pytest tests/test_context.py   # Code context builder
+uv run pytest tests/test_storage.py   # Decision memory storage
 ```

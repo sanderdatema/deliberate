@@ -10,8 +10,11 @@ from typing import Any, Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
+import uuid
+from datetime import datetime, timezone
+
 from deliberators.loader import ConfigLoader, PersonaLoader
-from deliberators.models import Config, ConvergenceResult, DeliberationEvent, IntakeBrief, Persona, Preset
+from deliberators.models import Config, ConvergenceResult, DecisionRecord, DeliberationEvent, IntakeBrief, Persona, Preset
 
 EventCallback = Callable[[DeliberationEvent], Awaitable[None] | None]
 TextCallback = Callable[[str, str], Awaitable[None] | None]  # (agent_name, text_delta)
@@ -85,6 +88,34 @@ class DeliberationResult:
     intake_brief: IntakeBrief | None = None
 
 
+def _condense_positions(rounds: dict[int, dict[str, str]]) -> dict[str, str]:
+    """Extract last-round output per analyst, truncated to ~200 chars."""
+    if not rounds:
+        return {}
+    last_round = rounds[max(rounds.keys())]
+    return {
+        name: output[:200].rsplit(" ", 1)[0] + ("..." if len(output) > 200 else "")
+        for name, output in last_round.items()
+    }
+
+
+def to_decision_record(
+    result: DeliberationResult, follow_up_of: str | None = None,
+) -> DecisionRecord:
+    """Build a DecisionRecord from a DeliberationResult."""
+    return DecisionRecord(
+        id=uuid.uuid4().hex,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        question=result.question,
+        preset_name=result.preset.name,
+        analysts=tuple(result.rounds[1].keys()) if 1 in result.rounds else (),
+        editors=tuple(result.editor_outputs.keys()),
+        summary=result.samenvatter_output or "",
+        key_positions=_condense_positions(result.rounds),
+        follow_up_of=follow_up_of,
+    )
+
+
 class DeliberationEngine:
     """Orchestrates a multi-agent deliberation using claude -p subprocesses."""
 
@@ -107,6 +138,7 @@ class DeliberationEngine:
     async def run(
         self, question: str, preset_name: str | None = None,
         code_context: str | None = None,
+        prior_decision: DecisionRecord | None = None,
     ) -> DeliberationResult:
         """Run a full deliberation and return the result."""
         preset_name = preset_name or self.config.default_preset
@@ -137,7 +169,7 @@ class DeliberationEngine:
             prior_output = result.rounds.get(round_num - 1) if round_num > 1 else None
             round_output = await self._run_analyst_round(
                 round_num, analyst_names, question, prior_output,
-                code_context, intake_brief,
+                code_context, intake_brief, prior_decision,
             )
             result.rounds[round_num] = round_output
 
@@ -191,6 +223,7 @@ class DeliberationEngine:
         prior_round_output: dict[str, str] | None,
         code_context: str | None = None,
         intake_brief: IntakeBrief | None = None,
+        prior_decision: DecisionRecord | None = None,
     ) -> dict[str, str]:
         """Run all analysts for a round in parallel with concurrency limit."""
         await self._emit(DeliberationEvent(type="round_started", round_number=round_num))
@@ -210,7 +243,7 @@ class DeliberationEngine:
 
                 prompt = self._build_analyst_prompt(
                     persona, question, round_num, prior_round_output,
-                    code_context, intake_brief,
+                    code_context, intake_brief, prior_decision,
                 )
                 output = await self._call_agent(persona, prompt)
 
@@ -530,9 +563,21 @@ class DeliberationEngine:
         prior_round_output: dict[str, str] | None,
         code_context: str | None = None,
         intake_brief: IntakeBrief | None = None,
+        prior_decision: DecisionRecord | None = None,
     ) -> str:
         """Build the prompt for an analyst agent."""
         parts: list[str] = []
+
+        if prior_decision:
+            positions_text = "\n".join(
+                f"- {name}: {pos}" for name, pos in prior_decision.key_positions.items()
+            )
+            parts.append(
+                f"PRIOR DELIBERATION CONTEXT:\n"
+                f"Question: {prior_decision.question}\n"
+                f"Conclusion: {prior_decision.summary}\n"
+                f"Key positions:\n{positions_text}"
+            )
 
         if intake_brief and intake_brief.summary:
             parts.append(f"INTAKE CONTEXT:\n{intake_brief.summary}")

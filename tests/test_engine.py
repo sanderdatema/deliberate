@@ -112,7 +112,7 @@ class TestQuickPreset:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "quick")
 
-        assert tracker.call_count == 5  # 3 analysts + 2 editors
+        assert tracker.call_count == 6  # 1 intake + 3 analysts + 2 editors
 
     @pytest.mark.asyncio
     async def test_result_structure(self, config: Config, personas: dict[str, Persona]) -> None:
@@ -152,7 +152,7 @@ class TestBalancedPreset:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        assert tracker.call_count == 14
+        assert tracker.call_count == 15  # 1 intake + 5x2 analysts + 4 editors
 
     @pytest.mark.asyncio
     async def test_two_rounds(self, config: Config, personas: dict[str, Persona]) -> None:
@@ -239,8 +239,8 @@ class TestRound2FullOutput:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        # Calls 6-10 are Round 2 (calls 1-5 are Round 1)
-        round2_calls = tracker.calls[5:10]
+        # Calls 7-11 are Round 2 (call 0=intake, calls 1-5 are Round 1)
+        round2_calls = tracker.calls[6:11]
 
         for call in round2_calls:
             prompt = call["process"].stdin_text
@@ -259,7 +259,7 @@ class TestRound2FullOutput:
             await engine.run("Test question", "balanced")
 
         # Check a Round 2 call has the full 500-char output
-        round2_call = tracker.calls[5]
+        round2_call = tracker.calls[6]
         prompt = round2_call["process"].stdin_text
         assert long_output in prompt
 
@@ -284,7 +284,7 @@ class TestEventEmission:
 
         # Check structure
         assert event_types[0] == "deliberation_started"
-        assert event_types[1] == "round_started"
+        assert event_types[1] == "intake_started"
         assert event_types[-1] == "deliberation_completed"
         assert event_types[-2] == "editorial_completed"
 
@@ -387,7 +387,7 @@ class TestCodeContext:
             await engine.run("Review this code", "quick", code_context="def foo(): pass")
 
         # First 3 calls are analysts
-        for call in tracker.calls[:3]:
+        for call in tracker.calls[1:4]:  # skip intake (call 0)
             prompt = call["process"].stdin_text
             assert "CODE UNDER REVIEW" in prompt
             assert "def foo(): pass" in prompt
@@ -401,7 +401,7 @@ class TestCodeContext:
             await engine.run("Review this code", "quick", code_context="def bar(): pass")
 
         # Last 2 calls are editors (marx + samenvatter) in quick preset
-        for call in tracker.calls[3:]:
+        for call in tracker.calls[4:]:  # skip intake (0) + 3 analysts
             prompt = call["process"].stdin_text
             assert "CODE UNDER REVIEW" in prompt
             assert "def bar(): pass" in prompt
@@ -736,7 +736,7 @@ class TestSubprocessArgs:
             await engine.run("Test", "quick")
 
         # First call should be an analyst with a FORBIDDEN constraint
-        first_system = tracker.get_system_prompt(0)
+        first_system = tracker.get_system_prompt(1)  # index 0 is intake agent
         assert "FORBIDDEN" in first_system or "MUST NOT" in first_system
 
     @pytest.mark.asyncio
@@ -825,7 +825,7 @@ class TestInjectableAgentFn:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test", "quick")
 
-        assert tracker.call_count == 5
+        assert tracker.call_count == 6  # 1 intake + 3 analysts + 2 editors
 
 
 class TestSubprocessTimeout:
@@ -932,3 +932,178 @@ class TestConcurrencyLimit:
 
         # Peak concurrency should never exceed max_concurrent
         assert max(concurrency_log) <= max_concurrent
+
+
+class TestIntakePhase:
+    """Tests for the intake phase (Phase 17)."""
+
+    @pytest.mark.asyncio
+    async def test_intake_brief_in_result(self, config: Config, personas: dict[str, Persona]) -> None:
+        """engine.run() returns a result with intake_brief populated."""
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            result = await engine.run("Test question", "quick")
+
+        assert result.intake_brief is not None
+        assert result.intake_brief.question == "Test question"
+
+    @pytest.mark.asyncio
+    async def test_analyst_prompt_includes_intake_context(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Analyst prompts include INTAKE CONTEXT from the intake brief."""
+        tracker = make_mock_subprocess(default="IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: Test summary about the question")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas)
+            await engine.run("Test question", "quick")
+
+        # Analyst calls are 1-3 (0 is intake)
+        for call in tracker.calls[1:4]:
+            prompt = call["process"].stdin_text
+            assert "INTAKE CONTEXT:" in prompt
+            assert "Test summary about the question" in prompt
+            # INTAKE CONTEXT should come before QUESTION FOR DELIBERATION
+            assert prompt.index("INTAKE CONTEXT:") < prompt.index("QUESTION FOR DELIBERATION:")
+
+    @pytest.mark.asyncio
+    async def test_intake_events_emitted(self, config: Config, personas: dict[str, Persona]) -> None:
+        """intake_started and intake_completed events are emitted before round_started."""
+        events: list[DeliberationEvent] = []
+
+        async def collect(event: DeliberationEvent) -> None:
+            events.append(event)
+
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=collect)
+            await engine.run("Test question", "quick")
+
+        types = [e.type for e in events]
+        assert "intake_started" in types
+        assert "intake_completed" in types
+        # intake must come before first round
+        assert types.index("intake_started") < types.index("round_started")
+        assert types.index("intake_completed") < types.index("round_started")
+
+    @pytest.mark.asyncio
+    async def test_intake_skipped_for_code_presets(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Code presets do not run the intake phase."""
+        events: list[DeliberationEvent] = []
+
+        async def collect(event: DeliberationEvent) -> None:
+            events.append(event)
+
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=collect)
+            result = await engine.run("Review code", "code_quick")
+
+        types = [e.type for e in events]
+        assert "intake_started" not in types
+        assert result.intake_brief is None
+
+    @pytest.mark.asyncio
+    async def test_no_clarification_when_callback_none(self, config: Config, personas: dict[str, Persona]) -> None:
+        """When on_clarify is None, unclear questions proceed without clarification."""
+        tracker = make_mock_subprocess(default="IS_CLEAR: no\nCLARIFICATION_QUESTION: What do you mean?\nBRIEF: Ambiguous question")
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_clarify=None)
+            result = await engine.run("Vague question", "quick")
+
+        assert result.intake_brief is not None
+        assert result.intake_brief.is_clear is False
+        assert result.intake_brief.clarifications == ()
+
+    @pytest.mark.asyncio
+    async def test_clarification_loop_called(self, config: Config, personas: dict[str, Persona]) -> None:
+        """When intake says IS_CLEAR: no and on_clarify is set, clarification is requested."""
+        call_count = 0
+
+        async def mock_clarify(question: str) -> str:
+            nonlocal call_count
+            call_count += 1
+            return "More context here"
+
+        # First call: unclear. Second call: clear (after clarification).
+        responses = iter([
+            "IS_CLEAR: no\nCLARIFICATION_QUESTION: What specifically?\nBRIEF: Needs more context",
+            "IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: Clarified question about X",
+        ])
+
+        original_functional = DeliberationEngine._call_functional_agent
+
+        async def patched_functional(self_engine, system_prompt, prompt, model):
+            # Only intercept intake calls (check for intake system prompt)
+            if "intake analyst" in system_prompt.lower():
+                return next(responses, "IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: fallback")
+            return await original_functional(self_engine, system_prompt, prompt, model)
+
+        tracker = make_mock_subprocess()
+        with (
+            patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
+            patch.object(DeliberationEngine, "_call_functional_agent", patched_functional),
+        ):
+            engine = DeliberationEngine(config, personas, on_clarify=mock_clarify)
+            result = await engine.run("Vague question", "quick")
+
+        assert call_count == 1
+        assert len(result.intake_brief.clarifications) == 1
+        assert result.intake_brief.clarifications[0] == ("What specifically?", "More context here")
+        assert result.intake_brief.is_clear is True
+
+    @pytest.mark.asyncio
+    async def test_clarification_max_three_rounds(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Clarification loop stops after 3 iterations even if still unclear."""
+        clarify_count = 0
+
+        async def mock_clarify(question: str) -> str:
+            nonlocal clarify_count
+            clarify_count += 1
+            return f"Answer {clarify_count}"
+
+        # Always returns unclear
+        async def always_unclear(self_engine, system_prompt, prompt, model):
+            if "intake analyst" in system_prompt.lower():
+                return "IS_CLEAR: no\nCLARIFICATION_QUESTION: Still unclear?\nBRIEF: Still ambiguous"
+            return "Mock output"
+
+        tracker = make_mock_subprocess()
+        with (
+            patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
+            patch.object(DeliberationEngine, "_call_functional_agent", always_unclear),
+        ):
+            engine = DeliberationEngine(config, personas, on_clarify=mock_clarify)
+            result = await engine.run("Perpetually vague", "quick")
+
+        # Max 3 clarification rounds: first iteration finds unclear, asks, loops.
+        # Iterations: 0 (unclear->clarify), 1 (unclear->clarify), 2 (unclear->break at max)
+        assert clarify_count <= 3
+        assert len(result.intake_brief.clarifications) <= 3
+
+
+class TestParseIntakeOutput:
+    """Unit tests for _parse_intake_output."""
+
+    def test_parse_clear_output(self) -> None:
+        output = "IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: A good question about ethics"
+        result = DeliberationEngine._parse_intake_output(output)
+        assert result["is_clear"] == "yes"
+        assert result["clarification_question"] == "none"
+        assert result["brief"] == "A good question about ethics"
+
+    def test_parse_unclear_output(self) -> None:
+        output = "IS_CLEAR: no\nCLARIFICATION_QUESTION: What domain?\nBRIEF: Needs context"
+        result = DeliberationEngine._parse_intake_output(output)
+        assert result["is_clear"] == "no"
+        assert result["clarification_question"] == "What domain?"
+        assert result["brief"] == "Needs context"
+
+    def test_parse_fallback_on_garbage(self) -> None:
+        output = "Some random LLM output without structure"
+        result = DeliberationEngine._parse_intake_output(output)
+        assert result["is_clear"] == "yes"  # fallback default
+        assert result["brief"] == "Some random LLM output without structure"
+
+    def test_parse_empty_output(self) -> None:
+        result = DeliberationEngine._parse_intake_output("")
+        assert result["is_clear"] == "yes"
+        assert result["brief"] == ""

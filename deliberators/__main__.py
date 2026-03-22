@@ -21,6 +21,11 @@ def _print_event(event: DeliberationEvent) -> None:
         case "deliberation_started":
             preset = event.data.get("preset", "?")
             print(f"Deliberatie gestart (preset: {preset})", file=sys.stderr)
+        case "intake_started":
+            print("  Intake analyse...", file=sys.stderr)
+        case "intake_completed":
+            status = "helder" if event.data.get("is_clear") else "verduidelijkt"
+            print(f"  Intake {status}", file=sys.stderr)
         case "round_started":
             print(f"  Ronde {event.round_number} gestart...", file=sys.stderr)
         case "agent_started":
@@ -116,11 +121,18 @@ async def _run(args: argparse.Namespace) -> int:
         if web:
             await web.push_text(agent_name, text)
 
+    async def on_clarify(question: str) -> str:
+        if sys.stdin.isatty():
+            print(f"\n  Intake vraag: {question}", file=sys.stderr)
+            return input("  Jouw antwoord: ")
+        return ""
+
     engine = DeliberationEngine(
         config=config,
         personas=personas,
         on_event=on_event,
         on_text=on_text if web else None,
+        on_clarify=on_clarify,
     )
 
     code_context = None

@@ -2,7 +2,7 @@
 
 import pytest
 
-from deliberators.models import Config, DeliberationEvent, Persona, Preset
+from deliberators.models import Config, DeliberationEvent, IntakeBrief, Persona, Preset
 
 
 class TestPersona:
@@ -85,13 +85,15 @@ class TestDeliberationEvent:
     @pytest.mark.parametrize(
         "event_type",
         [
+            "deliberation_started",
+            "intake_started",
+            "intake_completed",
             "agent_started",
             "agent_completed",
             "round_started",
             "round_completed",
             "editorial_started",
             "editorial_completed",
-            "deliberation_started",
             "deliberation_completed",
         ],
     )
@@ -112,3 +114,31 @@ class TestDeliberationEvent:
         assert e.agent_name == "socrates"
         assert e.round_number == 1
         assert e.data["confidence"] == 0.85
+
+
+class TestIntakeBrief:
+    def test_create(self):
+        brief = IntakeBrief(
+            question="test question",
+            summary="This is about X",
+            clarifications=(("Q?", "A"),),
+            is_clear=True,
+        )
+        assert brief.question == "test question"
+        assert brief.is_clear is True
+        assert len(brief.clarifications) == 1
+
+    def test_frozen(self):
+        brief = IntakeBrief(question="q", summary="s", clarifications=(), is_clear=True)
+        with pytest.raises(AttributeError):
+            brief.summary = "changed"  # type: ignore[misc]
+
+    def test_empty_clarifications(self):
+        brief = IntakeBrief(question="q", summary="s", clarifications=(), is_clear=True)
+        assert brief.clarifications == ()
+
+    def test_intake_event_types(self):
+        e1 = DeliberationEvent(type="intake_started")
+        assert e1.type == "intake_started"
+        e2 = DeliberationEvent(type="intake_completed", data={"is_clear": True})
+        assert e2.data["is_clear"] is True

@@ -45,7 +45,7 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "quick")
 
-        for call in tracker.calls:
+        for call in tracker.calls[1:]:  # skip intake agent (index 0)
             system = call["system_prompt"]
             assert "FORBIDDEN" in system or "MUST NOT" in system, (
                 f"--system-prompt should contain persona constraints, got: {system[:100]}"
@@ -66,8 +66,8 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        # Round 2 calls are 6-10 (after 5 Round 1 calls)
-        round2_calls = tracker.calls[5:10]
+        # Round 2 calls are 7-11 (after 1 intake + 5 Round 1 calls)
+        round2_calls = tracker.calls[6:11]
         for call in round2_calls:
             content = call["process"].stdin_text
             assert "THIS IS ROUND 2" in content
@@ -82,7 +82,7 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        round2_calls = tracker.calls[5:10]
+        round2_calls = tracker.calls[6:11]
         for call in round2_calls:
             content = call["process"].stdin_text
             assert "Detailed analysis with evidence and reasoning" in content
@@ -97,8 +97,8 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        # Editor calls are after 10 analyst calls (5+5)
-        editor_calls = tracker.calls[10:]
+        # Editor calls are after 1 intake + 10 analyst calls
+        editor_calls = tracker.calls[11:]
         for call in editor_calls:
             content = call["process"].stdin_text
             assert "Round 1" in content

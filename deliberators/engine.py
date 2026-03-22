@@ -11,11 +11,32 @@ from typing import Any, Awaitable, Callable
 logger = logging.getLogger(__name__)
 
 from deliberators.loader import ConfigLoader, PersonaLoader
-from deliberators.models import Config, DeliberationEvent, Persona, Preset
+from deliberators.models import Config, DeliberationEvent, IntakeBrief, Persona, Preset
 
 EventCallback = Callable[[DeliberationEvent], Awaitable[None] | None]
 TextCallback = Callable[[str, str], Awaitable[None] | None]  # (agent_name, text_delta)
 AgentFn = Callable[[Persona, str], Awaitable[str]]
+ClarificationCallback = Callable[[str], Awaitable[str] | str]
+
+_INTAKE_SYSTEM_PROMPT = """\
+You are an intake analyst for a multi-perspective deliberation system.
+Your job is to assess whether the question is clear enough for a team of expert \
+thinkers to deliberate on productively.
+
+Analyze the question for:
+- Implicit assumptions that should be made explicit
+- Missing context that would significantly change the analysis
+- Key dimensions or trade-offs worth exploring
+- Whether the question is specific enough to deliberate
+
+Output EXACTLY this structure (no other text before or after):
+IS_CLEAR: yes|no
+CLARIFICATION_QUESTION: [one focused question if not clear, or "none" if clear]
+BRIEF: [2-4 sentences: what the question is really asking, key assumptions, \
+dimensions to explore. Write in the same language as the question.]
+"""
+
+_MAX_CLARIFICATION_ROUNDS = 3
 
 
 @dataclass
@@ -28,6 +49,7 @@ class DeliberationResult:
     editor_outputs: dict[str, str] = field(default_factory=dict)
     samenvatter_output: str | None = None
     code_context: str | None = None
+    intake_brief: IntakeBrief | None = None
 
 
 class DeliberationEngine:
@@ -40,12 +62,14 @@ class DeliberationEngine:
         on_event: EventCallback | None = None,
         on_text: TextCallback | None = None,
         agent_fn: AgentFn | None = None,
+        on_clarify: ClarificationCallback | None = None,
     ) -> None:
         self.config = config
         self.personas = personas
         self.on_event = on_event
         self.on_text = on_text
         self._agent_fn = agent_fn
+        self.on_clarify = on_clarify
 
     async def run(
         self, question: str, preset_name: str | None = None,
@@ -59,11 +83,18 @@ class DeliberationEngine:
 
         await self._emit(DeliberationEvent(type="deliberation_started", data={"preset": preset_name}))
 
+        # Intake phase (skip for code presets)
+        intake_brief: IntakeBrief | None = None
+        if not preset_name.startswith("code_"):
+            intake_brief = await self._run_intake(question)
+            result.intake_brief = intake_brief
+
         # Analyst rounds
         for round_num in range(1, preset.rounds + 1):
             prior_output = result.rounds.get(round_num - 1) if round_num > 1 else None
             round_output = await self._run_analyst_round(
-                round_num, preset.analysts, question, prior_output, code_context
+                round_num, preset.analysts, question, prior_output,
+                code_context, intake_brief,
             )
             result.rounds[round_num] = round_output
 
@@ -108,6 +139,7 @@ class DeliberationEngine:
         question: str,
         prior_round_output: dict[str, str] | None,
         code_context: str | None = None,
+        intake_brief: IntakeBrief | None = None,
     ) -> dict[str, str]:
         """Run all analysts for a round in parallel with concurrency limit."""
         await self._emit(DeliberationEvent(type="round_started", round_number=round_num))
@@ -126,7 +158,8 @@ class DeliberationEngine:
                 ))
 
                 prompt = self._build_analyst_prompt(
-                    persona, question, round_num, prior_round_output, code_context
+                    persona, question, round_num, prior_round_output,
+                    code_context, intake_brief,
                 )
                 output = await self._call_agent(persona, prompt)
 
@@ -186,6 +219,112 @@ class DeliberationEngine:
             logger.error("Agent '%s' failed: %s", persona.name, e)
             return f"[Agent fout: {persona.name} — {type(e).__name__}: {e}]"
 
+    async def _call_functional_agent(
+        self, system_prompt: str, prompt: str, model: str,
+    ) -> str:
+        """Call a functional agent (no Persona) via subprocess."""
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "claude", "-p",
+                "--model", model,
+                "--system-prompt", system_prompt,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(input=prompt.encode()),
+                timeout=self.config.timeout,
+            )
+
+            if proc.returncode != 0:
+                error_msg = stderr.decode().strip()
+                logger.error("Functional agent failed (exit %d): %s", proc.returncode, error_msg)
+                return ""
+
+            return stdout.decode()
+        except asyncio.TimeoutError:
+            logger.error("Functional agent timed out after %ds", self.config.timeout)
+            try:
+                proc.kill()
+            except ProcessLookupError:
+                pass
+            return ""
+        except Exception as e:
+            logger.error("Functional agent failed: %s", e)
+            return ""
+
+    @staticmethod
+    def _parse_intake_output(output: str) -> dict[str, str]:
+        """Parse structured intake agent output into fields."""
+        result = {"is_clear": "yes", "clarification_question": "none", "brief": ""}
+        for line in output.splitlines():
+            stripped = line.strip()
+            if stripped.upper().startswith("IS_CLEAR:"):
+                value = stripped.split(":", 1)[1].strip().lower()
+                result["is_clear"] = "yes" if value.startswith("yes") else "no"
+            elif stripped.upper().startswith("CLARIFICATION_QUESTION:"):
+                result["clarification_question"] = stripped.split(":", 1)[1].strip()
+            elif stripped.upper().startswith("BRIEF:"):
+                result["brief"] = stripped.split(":", 1)[1].strip()
+        # Fallback: if brief is empty, use first 500 chars of output
+        if not result["brief"] and output.strip():
+            result["brief"] = output.strip()[:500]
+        return result
+
+    async def _run_intake(self, question: str) -> IntakeBrief:
+        """Run the intake phase: analyze question clarity, optionally clarify."""
+        await self._emit(DeliberationEvent(type="intake_started"))
+
+        clarifications: list[tuple[str, str]] = []
+        current_prompt = f"QUESTION:\n{question}"
+        parsed: dict[str, str] = {"is_clear": "yes", "brief": question, "clarification_question": "none"}
+
+        for iteration in range(_MAX_CLARIFICATION_ROUNDS):
+            output = await self._call_functional_agent(
+                _INTAKE_SYSTEM_PROMPT, current_prompt, self.config.model,
+            )
+            parsed = self._parse_intake_output(output)
+
+            is_clear = parsed["is_clear"] == "yes"
+            clarification_q = parsed.get("clarification_question", "none")
+
+            if is_clear or not self.on_clarify or clarification_q.lower() == "none":
+                break
+
+            # Ask user for clarification
+            user_answer = self.on_clarify(clarification_q)
+            if inspect.isawaitable(user_answer):
+                user_answer = await user_answer
+
+            if not user_answer:
+                break
+
+            clarifications.append((clarification_q, user_answer))
+
+            # Rebuild prompt with accumulated context
+            context_lines = "\n".join(
+                f"Q: {q}\nA: {a}" for q, a in clarifications
+            )
+            current_prompt = (
+                f"QUESTION:\n{question}\n\n"
+                f"ADDITIONAL CONTEXT FROM USER:\n{context_lines}"
+            )
+
+        brief = IntakeBrief(
+            question=question,
+            summary=parsed.get("brief", ""),
+            clarifications=tuple(clarifications),
+            is_clear=parsed["is_clear"] == "yes",
+        )
+
+        await self._emit(DeliberationEvent(
+            type="intake_completed",
+            data={"is_clear": brief.is_clear, "had_clarifications": len(clarifications) > 0},
+        ))
+
+        return brief
+
     def _build_analyst_prompt(
         self,
         persona: Persona,
@@ -193,11 +332,15 @@ class DeliberationEngine:
         round_num: int,
         prior_round_output: dict[str, str] | None,
         code_context: str | None = None,
+        intake_brief: IntakeBrief | None = None,
     ) -> str:
         """Build the prompt for an analyst agent."""
-        parts = [
-            f"QUESTION FOR DELIBERATION:\n{question}",
-        ]
+        parts: list[str] = []
+
+        if intake_brief and intake_brief.summary:
+            parts.append(f"INTAKE CONTEXT:\n{intake_brief.summary}")
+
+        parts.append(f"QUESTION FOR DELIBERATION:\n{question}")
 
         if code_context:
             parts.append(f"\nCODE UNDER REVIEW:\n{code_context}")

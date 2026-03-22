@@ -45,17 +45,29 @@ class Config:
 
 
 @dataclass(frozen=True)
+class IntakeBrief:
+    """Result of the intake phase — injected into analyst prompts."""
+
+    question: str
+    summary: str
+    clarifications: tuple[tuple[str, str], ...]
+    is_clear: bool
+
+
+@dataclass(frozen=True)
 class DeliberationEvent:
     """An event emitted during deliberation for streaming/UI."""
 
     type: Literal[
+        "deliberation_started",
+        "intake_started",
+        "intake_completed",
         "agent_started",
         "agent_completed",
         "round_started",
         "round_completed",
         "editorial_started",
         "editorial_completed",
-        "deliberation_started",
         "deliberation_completed",
     ]
     agent_name: str | None = None

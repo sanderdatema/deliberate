@@ -121,8 +121,8 @@ Phases: 3 of 3 complete
 - [x] 15-01: Path resolution preamble + parameterized paths + global copies (2026-03-20)
 
 ### v0.6 Adaptive Deliberation
-Status: **In progress**
-Phases: 6 of 7 complete
+Status: **Complete**
+Phases: 7 of 7 complete
 
 Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model routing, intake fase, adaptive rounds, genderdiversiteit, dynamische teamselectie, decision memory, en thematische rapportage.
 
@@ -134,7 +134,7 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 | 19 | Pool Expansion | 2 | Complete | 2026-03-22 |
 | 20 | Dynamic Team Selection | 1 | Complete | 2026-03-22 |
 | 21 | Decision Memory | 1 | Complete | 2026-03-22 |
-| 22 | Rapportage Redesign | 1 | Not started | |
+| 22 | Rapportage Redesign | 1 | Complete | 2026-03-22 |
 
 ## Phase Details (v0.6)
 
@@ -162,11 +162,9 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 ### Phase 21: Decision Memory ✅
 - [x] 21-01: DecisionStore + --history + --followup + auto-save (2026-03-22)
 
-### Phase 22: Rapportage Redesign
-**Focus:** Thematische rapportage i.p.v. per-persona output. Geintegreerd document met landschap, spanningsveld, blinde vlekken, actiepunten.
-
-**Depends on:** Phase 18 (convergentie-info), Phase 21 (actiepunten-structuur)
+### Phase 22: Rapportage Redesign ✅
+- [x] 22-01: Synthesis agent + thematic formatter + per-persona appendix (2026-03-22)
 
 ---
 *Roadmap created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 21 complete — decision memory*
+*Last updated: 2026-03-22 after v0.6 complete — all 22 phases shipped*

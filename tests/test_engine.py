@@ -160,7 +160,7 @@ class TestQuickPreset:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "quick")
 
-        assert tracker.call_count == 6  # 1 intake + 3 analysts + 2 editors (no convergence)
+        assert tracker.call_count == 7  # 1 intake + 3 analysts + 2 editors + 1 synthesis
 
     @pytest.mark.asyncio
     async def test_result_structure(self, config: Config, personas: dict[str, Persona]) -> None:
@@ -200,7 +200,7 @@ class TestBalancedPreset:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        assert tracker.call_count == 16  # 1 intake + 5 R1 + 1 convergence + 5 R2 + 4 editors
+        assert tracker.call_count == 17  # 1 intake + 5 R1 + 1 convergence + 5 R2 + 4 editors + 1 synthesis
 
     @pytest.mark.asyncio
     async def test_two_rounds(self, config: Config, personas: dict[str, Persona]) -> None:
@@ -448,8 +448,8 @@ class TestCodeContext:
             engine = DeliberationEngine(config, personas)
             await engine.run("Review this code", "quick", code_context="def bar(): pass")
 
-        # Last 2 calls are editors (marx + samenvatter) in quick preset
-        for call in tracker.calls[4:]:  # skip intake (0) + 3 analysts
+        # Editor calls: skip intake (0) + 3 analysts, exclude synthesis (last)
+        for call in tracker.calls[4:-1]:
             prompt = call["process"].stdin_text
             assert "CODE UNDER REVIEW" in prompt
             assert "def bar(): pass" in prompt
@@ -859,7 +859,7 @@ class TestInjectableAgentFn:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test", "quick")
 
-        assert tracker.call_count == 6  # 1 intake + 3 analysts + 2 editors
+        assert tracker.call_count == 7  # 1 intake + 3 analysts + 2 editors + 1 synthesis
 
 
 class TestSubprocessTimeout:

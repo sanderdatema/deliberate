@@ -58,6 +58,37 @@ EDITORS: name1, name2
 REASON: [1-2 sentences explaining your selection rationale]
 """
 
+_SYNTHESIS_SYSTEM_PROMPT = """\
+You are a synthesis agent for a multi-perspective deliberation system.
+You receive the complete output from all analyst rounds and editorial analyses.
+Your job is to synthesize this into a thematic report that organizes insights \
+by topic, not by who said what.
+
+Write EXACTLY these sections with these headers (no other text before or after):
+
+## Het Landschap
+What is this question really about? What are the key dimensions, stakeholders, \
+and forces at play? Synthesize the analysts' framing into a coherent picture.
+
+## Spanningsvelden
+Where do the analysts fundamentally disagree? What are the unresolved tensions? \
+Present each tension as a clear axis (X vs Y) with the strongest arguments on each side.
+
+## Blinde Vlekken
+What did nobody question? What assumptions do all analysts share? \
+Draw primarily from the editorial analyses here.
+
+## Verschuiving
+How did positions evolve between rounds? Who changed their mind and why? \
+What stayed firm? Skip this section entirely if there was only 1 round.
+
+## Actiepunten
+3-5 concrete, actionable next steps. Each should be specific enough to act on \
+tomorrow. Prioritize by impact and feasibility.
+
+Write in the same language as the original question.
+"""
+
 _CONVERGENCE_SYSTEM_PROMPT = """\
 You are a convergence analyst for a multi-perspective deliberation system.
 After each analyst round, you evaluate whether continuing with another round \
@@ -86,6 +117,7 @@ class DeliberationResult:
     samenvatter_output: str | None = None
     code_context: str | None = None
     intake_brief: IntakeBrief | None = None
+    synthesis_output: str | None = None
 
 
 def _condense_positions(rounds: dict[int, dict[str, str]]) -> dict[str, str]:
@@ -211,6 +243,15 @@ class DeliberationEngine:
             ))
 
         await self._emit(DeliberationEvent(type="editorial_completed"))
+
+        # Synthesis: generate thematic report sections
+        synthesis = await self._run_synthesis(
+            question, all_analyst_output, result.editor_outputs,
+            result.samenvatter_output, len(result.rounds),
+        )
+        if synthesis:
+            result.synthesis_output = synthesis
+
         await self._emit(DeliberationEvent(type="deliberation_completed"))
 
         return result
@@ -554,6 +595,34 @@ class DeliberationEngine:
         ))
 
         return convergence
+
+    async def _run_synthesis(
+        self,
+        question: str,
+        all_analyst_output: str,
+        editor_output: dict[str, str],
+        samenvatter_output: str | None,
+        num_rounds: int,
+    ) -> str:
+        """Run synthesis agent to generate thematic report sections."""
+        parts = [f"ORIGINAL QUESTION:\n{question}"]
+        parts.append(f"NUMBER OF ROUNDS: {num_rounds}")
+        parts.append(f"ANALYST OUTPUT:\n{all_analyst_output}")
+
+        if editor_output:
+            editor_text = "\n\n".join(
+                f"### {name}\n{output}" for name, output in editor_output.items()
+            )
+            parts.append(f"EDITORIAL ANALYSIS:\n{editor_text}")
+
+        if samenvatter_output:
+            parts.append(f"SAMENVATTER:\n{samenvatter_output}")
+
+        prompt = "\n\n".join(parts)
+        output = await self._call_functional_agent(
+            _SYNTHESIS_SYSTEM_PROMPT, prompt, self.config.model,
+        )
+        return output
 
     def _build_analyst_prompt(
         self,

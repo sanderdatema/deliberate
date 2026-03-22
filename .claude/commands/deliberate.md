@@ -288,89 +288,105 @@ Display the samenvatter output as:
 {samenvatter output}
 ```
 
-## Step 7: Format Full Report (collapsible)
+## Step 7: Synthesis — Generate Thematic Report
 
-Present the complete deliberation as a structured markdown report:
+After all editors (including Samenvatter) are done, spawn ONE final synthesis agent. This agent reads ALL output and generates a thematic report organized by topic, not by persona.
+
+Spawn with Agent tool (`model: "opus"`):
+
+```
+You are a synthesis agent for a multi-perspective deliberation system.
+Synthesize all analyst and editor output into a thematic report.
+
+---
+
+ORIGINAL QUESTION:
+{$ARGUMENTS}
+
+NUMBER OF ROUNDS: {number of completed rounds}
+
+ANALYST OUTPUT:
+{compiled output from all rounds — for each analyst, show their Round 1 and Round 2 positions}
+
+EDITORIAL ANALYSIS:
+{all editor output}
+
+SAMENVATTER:
+{samenvatter output}
+
+---
+
+Write these sections:
+
+## Het Landschap
+What is this question really about? Key dimensions, stakeholders, forces at play.
+
+## Spanningsvelden
+Where analysts fundamentally disagree. Present each tension as X vs Y.
+
+## Blinde Vlekken
+What nobody questioned. Shared assumptions. Draw from editorial analyses.
+
+## Verschuiving
+How positions evolved between rounds. Skip if only 1 round.
+
+## Actiepunten
+3-5 concrete, actionable next steps. Specific enough to act on tomorrow.
+
+Respond in the same language as the question.
+```
+
+## Step 8: Format Full Report
+
+Present the complete deliberation as a thematic markdown report:
 
 ```markdown
+## Kort & Concreet
+
+{samenvatter output}
+
+---
+
 # Deliberatie: {$ARGUMENTS}
 
-## Ronde 1: Onafhankelijke Analyse
-
-### Socrates — Dialectische ondervrager
-{socrates round 1 output}
-
-### Willem van Occam — Radicale snoeier
-{occam round 1 output}
-
-### Leonardo da Vinci — Cross-domein patroonzoeker
-{da-vinci round 1 output}
-
-### Sherlock Holmes — Deductieve bewijs-jager
-{holmes round 1 output}
-
-### Arsène Lupin — Contraire omdraaier
-{lupin round 1 output}
+{synthesis output — contains ## Het Landschap, ## Spanningsvelden, ## Blinde Vlekken, ## Verschuiving, ## Actiepunten}
 
 ---
 
-## Ronde 2: Reactieve Deliberatie
+## Volledig Verslag
 
-### Socrates — Reactie
-{socrates round 2 output}
+### Ronde 1: Onafhankelijke Analyse
 
-### Willem van Occam — Reactie
-{occam round 2 output}
+#### {Analyst 1 name} — {reasoning style}
+{analyst 1 round 1 output}
 
-### Leonardo da Vinci — Reactie
-{da-vinci round 2 output}
+#### {Analyst 2 name} — {reasoning style}
+{analyst 2 round 1 output}
 
-### Sherlock Holmes — Reactie
-{holmes round 2 output}
+[...all analysts...]
 
-### Arsène Lupin — Reactie
-{lupin round 2 output}
+### Ronde 2: Reactieve Deliberatie
 
----
+#### {Analyst 1 name} — Reactie
+{analyst 1 round 2 output}
 
-## Redactionele Analyse
+[...all analysts...]
 
-### Karl Marx — Collectieve blinde-vlek-detector
-{marx output}
+### Redactionele Analyse
 
-### Georg Hegel — Dialectische synthesizer
-{hegel output}
+#### {Editor 1 name} — {reasoning style}
+{editor 1 output}
 
-### Hannah Arendt — Mechanisme-ontdekker
-{arendt output}
-
----
-
-## Consensus & Dissensie
-
-### Convergentie
-[Points where 3+ analysts agree, with their confidence scores]
-
-### Polarisatie
-[Points where analysts fundamentally disagree]
-
-### Verschuiving Ronde 1 → 2
-[How positions changed between rounds — who moved, who held firm, and why]
-
-### Vraagverschuiving
-[The most powerful question shifts from the editors]
-
-### Gewogen Conclusie
-[Weighted summary: what emerges when you combine the confidence scores, the consensus points, the editorial blind spots, and the round-over-round shifts into a single coherent picture]
+[...all editors...]
 ```
 
 ## Important Notes
 
-- **For code review**, use `/deliberate-code` instead — it uses specialized developer/designer personas (Linus Torvalds, Kent Beck, Martin Fowler, Bruce Schneier, etc.) and reads actual code files.
+- **For code review**, use `--files` flag — the team selector picks code-focused personas automatically.
 - Each agent operates independently within a round — they cannot see each other during parallel execution
 - Round 2 agents see Round 1 output but NOT other Round 2 agents' output
 - Editors see ALL output from both rounds and prior editors
-- The meta-analyse sections (Consensus & Dissensie) are YOUR synthesis as orchestrator
+- The synthesis agent generates the thematic sections (Het Landschap, Spanningsvelden, etc.)
 - If any agent fails, report it and continue with remaining perspectives
 - All agents use model "opus" for deep reasoning
 - The entire deliberation takes ~5-8 minutes with parallel execution per round

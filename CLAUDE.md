@@ -68,12 +68,12 @@ personas/               # Thinker definitions (YAML, 54 personas)
   samenvatter.yaml
   code-synthesizer.yaml
 deliberators/           # Python engine
-  engine.py             # Async orchestration + team selection
+  engine.py             # Async orchestration + team selection + synthesis
   storage.py            # Decision memory (JSON save/load/list)
   context.py            # CodeContextBuilder (file reading)
   loader.py             # YAML persona/config loaders
   models.py             # Data models (Persona, Config, DecisionRecord, etc.)
-  formatter.py          # Markdown output formatter
+  formatter.py          # Thematic report formatter (with per-persona appendix)
   web.py                # FastAPI WebSocket viewer
   __main__.py           # CLI entry point
 tests/                  # Pytest validation suite
@@ -100,8 +100,8 @@ tests/                  # Pytest validation suite
 5. Ronde 2+: analysts react to each other (adaptive, convergence check)
 6. Editorial round: editors run **sequentially**
 7. **De Samenvatter:** Concrete, alledaagse taal
-8. **Auto-save:** Decision record saved to `~/.local/share/deliberators/decisions/`
-9. Meta-analysis: consensus, dissensie, verschuiving
+8. **Synthesis:** Thematic report (landschap, spanningsvelden, blinde vlekken, verschuiving, actiepunten)
+9. **Auto-save:** Decision record saved to `~/.local/share/deliberators/decisions/`
 
 When `--files` is provided, code context is injected into analyst and editor prompts, and the team selector prioritizes code-focused personas.
 

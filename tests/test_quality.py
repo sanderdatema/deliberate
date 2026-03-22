@@ -44,7 +44,9 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "quick")
 
-        for call in tracker.calls[1:]:  # skip intake agent (index 0)
+        # Skip functional agents (intake=0, synthesis=last) — only check persona agents
+        persona_calls = tracker.calls[1:-1]  # skip intake (0) and synthesis (last)
+        for call in persona_calls:
             system = call["system_prompt"]
             assert "FORBIDDEN" in system or "MUST NOT" in system, (
                 f"--system-prompt should contain persona constraints, got: {system[:100]}"
@@ -96,8 +98,8 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        # Editor calls are after 1 intake + 5 R1 + 1 convergence + 5 R2 = 12
-        editor_calls = tracker.calls[12:]
+        # Editor calls are after 1 intake + 5 R1 + 1 convergence + 5 R2 = 12, before synthesis (last)
+        editor_calls = tracker.calls[12:-1]
         for call in editor_calls:
             content = call["process"].stdin_text
             assert "Round 1" in content
@@ -118,7 +120,7 @@ class TestPromptConstruction:
             engine = DeliberationEngine(config, personas)
             await engine.run("Test question", "balanced")
 
-        samenvatter_call = tracker.calls[-1]
+        samenvatter_call = tracker.calls[-2]  # last is synthesis, samenvatter is second-to-last
         content = samenvatter_call["process"].stdin_text
         assert "Marx: shared blind spots identified" in content
         assert "Hegel: dialectical synthesis found" in content

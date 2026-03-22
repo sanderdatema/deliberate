@@ -47,7 +47,14 @@ class TestResultFormatter:
     def personas(self) -> dict[str, Persona]:
         return PersonaLoader.load_all(PERSONAS_DIR)
 
-    def _make_result(self) -> DeliberationResult:
+    _SYNTHESIS = (
+        "## Het Landschap\nThe question is about technical debt.\n\n"
+        "## Spanningsvelden\nSpeed vs quality is the core tension.\n\n"
+        "## Blinde Vlekken\nNobody questioned whether the module is actually used.\n\n"
+        "## Actiepunten\n1. Audit usage\n2. Plan migration\n3. Set deadline"
+    )
+
+    def _make_result(self, with_synthesis: bool = True) -> DeliberationResult:
         return DeliberationResult(
             question="Should we refactor the auth module?",
             preset=Preset(
@@ -68,6 +75,7 @@ class TestResultFormatter:
                 "marx": "Marx editorial: collective blind spots",
             },
             samenvatter_output="Kort: just refactor the auth module, it's simpler than you think.",
+            synthesis_output=self._SYNTHESIS if with_synthesis else None,
         )
 
     def test_format_contains_question(self, personas: dict[str, Persona]) -> None:
@@ -76,11 +84,26 @@ class TestResultFormatter:
         output = formatter.format(result)
         assert "Should we refactor the auth module?" in output
 
-    def test_format_contains_round_headers(self, personas: dict[str, Persona]) -> None:
+    def test_format_contains_thematic_sections(self, personas: dict[str, Persona]) -> None:
+        """Thematic report contains synthesis sections."""
         formatter = ResultFormatter(personas)
         result = self._make_result()
         output = formatter.format(result)
-        assert "## Ronde 1" in output
+        assert "## Het Landschap" in output
+        assert "## Spanningsvelden" in output
+        assert "## Blinde Vlekken" in output
+        assert "## Actiepunten" in output
+
+    def test_format_contains_appendix_with_personas(self, personas: dict[str, Persona]) -> None:
+        """Thematic report has Volledig Verslag appendix with per-persona output."""
+        formatter = ResultFormatter(personas)
+        result = self._make_result()
+        output = formatter.format(result)
+        assert "## Volledig Verslag" in output
+        assert "Occam's analysis" in output
+        assert "Holmes's analysis" in output
+        assert "Lupin's analysis" in output
+        assert "Marx editorial" in output
 
     def test_format_contains_analyst_output(self, personas: dict[str, Persona]) -> None:
         formatter = ResultFormatter(personas)
@@ -112,14 +135,24 @@ class TestResultFormatter:
         deliberatie_pos = output.index("# Deliberatie:")
         assert kort_pos < deliberatie_pos
 
+    def test_format_fallback_without_synthesis(self, personas: dict[str, Persona]) -> None:
+        """Without synthesis, falls back to per-persona format (no Volledig Verslag)."""
+        formatter = ResultFormatter(personas)
+        result = self._make_result(with_synthesis=False)
+        output = formatter.format(result)
+        assert "Volledig Verslag" not in output
+        assert "Het Landschap" not in output
+        # But still contains per-persona output directly
+        assert "Occam's analysis" in output
+        assert "Ronde 1" in output
+
     def test_format_is_valid_markdown(self, personas: dict[str, Persona]) -> None:
         """Output should contain markdown headers."""
         formatter = ResultFormatter(personas)
         result = self._make_result()
         output = formatter.format(result)
-        assert output.count("# ") >= 2  # At least title + round header
-        assert output.count("## ") >= 2
-        assert output.count("### ") >= 3  # At least 3 analysts
+        assert output.count("# ") >= 2  # At least title + thematic headers
+        assert output.count("## ") >= 4  # Kort & Concreet + thematic sections + appendix
 
 
 class TestCLIParser:

@@ -10,10 +10,10 @@ See: .paul/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Milestone: v0.7 Kwaliteit & Beknoptheid
-Phase: 24 of 25 (Robuustheid)
-Plan: 24-01 created
-Status: Ready for APPLY
-Last activity: 2026-03-22 — Phase 24 plan created
+Phase: 25 of 25 (Refactoring)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-03-22 — Phase 24 complete
 
 Progress:
 - v0.1: [##########] 100%
@@ -22,14 +22,14 @@ Progress:
 - v0.4: [##########] 100%
 - v0.5: [##########] 100%
 - v0.6: [##########] 100%
-- v0.7: [###░░░░░░░] 33%
+- v0.7: [######░░░░] 66%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 24-01 created, ready for APPLY]
+  ○        ○        ○     [Ready for Phase 25 PLAN]
 ```
 
 ## Accumulated Context
@@ -41,17 +41,18 @@ PLAN ──▶ APPLY ──▶ UNIFY
 
 ### Completed (v0.7)
 - Phase 23: Rapportage Inkorten — --verbose flag, compact output, synthesis constraints
+- Phase 24: Robuustheid — WebPusher try/finally, empty ID guard, parse logging
 
 ### Git State
-Last commit: 69fb258
+Last commit: 238bdff
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-03-22
-Stopped at: Phase 24 plan created
-Next action: /paul:apply for Phase 24-01
-Resume file: .paul/phases/24-robuustheid/24-01-PLAN.md
+Stopped at: Phase 24 complete
+Next action: /paul:plan for Phase 25 or close Plane tickets
+Resume file: .paul/phases/24-robuustheid/24-01-SUMMARY.md
 
 ---
 *STATE.md -- Updated after every significant action*

@@ -37,4 +37,4 @@ class TestGetDataPath:
         """All bundled personas pass validation."""
         bundled_dir = get_data_path() / "personas"
         personas = PersonaLoader.load_all(bundled_dir)
-        assert len(personas) == 25
+        assert len(personas) == 54

@@ -31,8 +31,8 @@ class TestPersonaLoaderLoadAll:
     def all_personas(self):
         return PersonaLoader.load_all(PERSONAS_DIR)
 
-    def test_loads_all_25(self, all_personas):
-        assert len(all_personas) == 25
+    def test_loads_all_54(self, all_personas):
+        assert len(all_personas) == 54
 
     def test_all_persona_names_present(self, all_personas):
         assert set(all_personas.keys()) == set(EXPECTED_PERSONA_NAMES)
@@ -67,7 +67,7 @@ class TestPersonaLoaderLoadAll:
 
     def test_analysts_count(self, all_personas):
         analysts = [p for p in all_personas.values() if p.role == "analyst"]
-        assert len(analysts) == 20
+        assert len(analysts) == 49
 
     def test_editors_count(self, all_personas):
         editors = [p for p in all_personas.values() if p.role == "editor"]

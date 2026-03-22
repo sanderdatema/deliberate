@@ -5,15 +5,15 @@
 See: .paul/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door multi-perspectief AI-debat
-**Current focus:** v0.6 Adaptive Deliberation — Phase 19 Plan 01 complete, ready for Plan 02
+**Current focus:** v0.6 Adaptive Deliberation — Phase 19 complete, ready for Phase 20
 
 ## Current Position
 
 Milestone: v0.6 Adaptive Deliberation
-Phase: 19 of 22 (Pool Expansion) — In progress (1/2 plans done)
-Plan: 19-01 complete
-Status: Plan 01 done, ready for Plan 02 PLAN
-Last activity: 2026-03-22 — Phase 19 Plan 01 APPLY+UNIFY complete; 676 tests pass
+Phase: 20 of 22 (Dynamic Team Selection) — Not started
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-03-22 — Phase 19 complete, transitioned to Phase 20
 
 Progress:
 - v0.1: [##########] 100%
@@ -21,14 +21,14 @@ Progress:
 - v0.3: [##########] 100%
 - v0.4: [##########] 100%
 - v0.5: [##########] 100%
-- v0.6: [#####_____] 43%
+- v0.6: [######____] 57%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN --> APPLY --> UNIFY
-  V        V        V     [Loop complete - Plan 19-01 done]
+  V        V        V     [Loop complete - Phase 19 done]
 ```
 
 ## Accumulated Context
@@ -51,7 +51,7 @@ PLAN --> APPLY --> UNIFY
 - _call_functional_agent voor subprocess calls zonder Persona (Phase 17)
 - Pool groeit, niemand gaat weg — intake selecteert dynamisch (Phase 19+20 besluit)
 - /deliberate-code verdwijnt, één unified /deliberate command (Phase 20 besluit)
-- Nieuwe personas: Joan Clarke, Margaret Hamilton, Barbara Liskov, Ada Lovelace, Hedy Lamarr, Alan Turing (Phase 19)
+- 29 nieuwe personas: pool 25→54, 23F/28M/3N, domains veld op alle personas (Phase 19)
 
 ### Git State
 Last commit: 6eecb11 (Phase 18 APPLY — adaptive rounds)
@@ -61,9 +61,9 @@ Feature branches merged: none
 ## Session Continuity
 
 Last session: 2026-03-22
-Stopped at: Phase 19 Plan 01 UNIFY complete
-Next action: /paul:plan for Phase 19 Plan 02 (29 new personas)
-Resume file: .paul/phases/19-pool-expansion/19-01-SUMMARY.md
+Stopped at: Phase 19 complete, ready to plan Phase 20
+Next action: /paul:plan for Phase 20 (Dynamic Team Selection)
+Resume file: .paul/ROADMAP.md
 
 ---
 *STATE.md -- Updated after every significant action*

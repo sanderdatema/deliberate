@@ -13,7 +13,7 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 | Attribute | Value |
 |-----------|-------|
 | Version | 0.6.0-dev |
-| Status | Phase 17 complete — intake fase live |
+| Status | Phase 19 complete — 54 persona pool live |
 | Last Updated | 2026-03-22 |
 
 ## Requirements
@@ -106,7 +106,7 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 ### Active (v0.6 — remaining)
 
 - [ ] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt (Phase 18)
-- [ ] Pool Expansion: breed expertpanel — Clarke, Hamilton, Liskov, Lovelace, Lamarr, Turing, Lupin + Thunberg, Thorbecke, Shakespeare, McKellen, etc. Genderdiversiteit als harde eis. `domains` veld in persona YAML. (Phase 19)
+- [x] Pool Expansion: 54 persona's met domains veld — Clarke, Hamilton, Liskov, Lovelace, Lamarr, Turing, Lupin, Thorbecke, Shakespeare, Kahneman, Taleb, etc. Genderdiversiteit: 23F/28M/3N (Phase 19)
 - [ ] Dynamic Team Selection: intake als teamsamensteller, /deliberate-code merged in /deliberate, cross-domein teams, matchen op expertise-domains (Phase 20)
 - [ ] DecisionMemory: JSON opslag van deliberaties, --history/--followup CLI flags (Phase 21)
 - [ ] ThematicFormatter: thematische rapportage i.p.v. per-persona output (Phase 22)
@@ -184,4 +184,4 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 
 ---
 *Created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 18 planning + roadmap expansion*
+*Last updated: 2026-03-22 after Phase 19 complete — pool expanded to 54 personas*

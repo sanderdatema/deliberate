@@ -122,7 +122,7 @@ Phases: 3 of 3 complete
 
 ### v0.6 Adaptive Deliberation
 Status: **In progress**
-Phases: 2 of 7 complete
+Phases: 4 of 7 complete
 
 Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model routing, intake fase, adaptive rounds, genderdiversiteit, dynamische teamselectie, decision memory, en thematische rapportage.
 
@@ -130,8 +130,8 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 |-------|------|-------|--------|-----------|
 | 16 | Persona & Model Routing | 1 | ✅ Complete | 2026-03-22 |
 | 17 | Intake Fase | 1 | ✅ Complete | 2026-03-22 |
-| 18 | Adaptive Rounds | 1 | Planning | |
-| 19 | Pool Expansion | 1 | Not started | |
+| 18 | Adaptive Rounds | 1 | Complete | 2026-03-22 |
+| 19 | Pool Expansion | 2 | Complete | 2026-03-22 |
 | 20 | Dynamic Team Selection | 1 | Not started | |
 | 21 | Decision Memory | 1 | Not started | |
 | 22 | Rapportage Redesign | 1 | Not started | |
@@ -144,12 +144,10 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 ### Phase 17: Intake Fase ✅
 - [x] 17-01: IntakeBrief + _run_intake() + _call_functional_agent() + clarification callback + CLI integration (2026-03-22)
 
-### Phase 18: Adaptive Rounds
-**Focus:** Convergentie-detectie vervangt vast aantal rondes. Functionele convergentie-agent evalueert na elke ronde of doorgaan waarde toevoegt. Preset `rounds` → `max_rounds` + `min_rounds`.
+### Phase 18: Adaptive Rounds ✅
+- [x] 18-01: ConvergenceAgent + adaptive loop + min/max_rounds + convergence events (2026-03-22)
 
-**Depends on:** Phase 17 (intake-brief gaat mee in convergence context)
-
-### Phase 19: Pool Expansion
+### Phase 19: Pool Expansion ✅
 **Focus:** Persona pool uitbreiden naar breed expertpanel — niet beperkt tot "code" of "general" categorieën. Experts uit alle domeinen: technologie, politiek, wetenschap, kunst, communicatie, duurzaamheid, etc. Genderdiversiteit als harde eis. Persona YAML's krijgen `domains` veld voor expertise-matching. `role: analyst | editor` categorisering wordt heroverwogen. Niemand gaat weg — de pool groeit.
 
 **Nieuwe personas (minimaal):** Joan Clarke (cryptanalyse), Margaret Hamilton (systems reliability), Barbara Liskov (abstractions), Ada Lovelace (algoritmisch denken), Hedy Lamarr (inventief denken), Alan Turing (formal correctness), Lupin (terug als contrarian). Plus verdere expansie: denk aan Greta Thunberg (duurzaamheid/activisme), Thorbecke (governance/staatsrecht), Shakespeare (taal/storytelling), Ian McKellen (presentatie/communicatie), en meer.
@@ -177,4 +175,4 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 
 ---
 *Roadmap created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 18 planning + roadmap expansion*
+*Last updated: 2026-03-22 after Phase 19 complete — pool expanded to 54 personas*

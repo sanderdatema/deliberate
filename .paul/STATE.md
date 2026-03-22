@@ -5,15 +5,15 @@
 See: .paul/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door multi-perspectief AI-debat
-**Current focus:** v0.6 Adaptive Deliberation — Phase 17 complete
+**Current focus:** v0.6 Adaptive Deliberation — Phase 17 complete, Phase 18 next
 
 ## Current Position
 
 Milestone: v0.6 Adaptive Deliberation
 Phase: 17 of 20 (Intake Fase) — Complete
-Plan: 17-01 executed
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-03-22 — Phase 17 APPLY complete, 607 tests pass
+Plan: 17-01 unified
+Status: Loop closed — ready for Phase 18
+Last activity: 2026-03-22 — Phase 17 UNIFY complete, 607 tests pass
 
 Progress:
 - v0.1: [##########] 100%
@@ -21,14 +21,14 @@ Progress:
 - v0.3: [##########] 100%
 - v0.4: [##########] 100%
 - v0.5: [##########] 100%
-- v0.6: [####______] 20%
+- v0.6: [########__] 40%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN --> APPLY --> UNIFY
-  V        V        O     [APPLY complete, ready for UNIFY]
+  V        V        V     [Phase 17 complete]
 ```
 
 ## Accumulated Context
@@ -49,18 +49,19 @@ PLAN --> APPLY --> UNIFY
 - Intake-agent en convergentie-agent worden functioneel (geen persona YAML)
 - Intake skipped voor code_* presets (Phase 17)
 - _call_functional_agent voor subprocess calls zonder Persona (Phase 17)
+- _call_functional_agent patroon herbruikbaar voor ConvergenceAgent (Phase 18)
 
 ### Git State
-Last commit: ee02131
+Last commit: 9a7dd73 (Phase 17 feat commit)
 Branch: main
 Feature branches merged: none
 
 ## Session Continuity
 
 Last session: 2026-03-22
-Stopped at: Phase 17 APPLY complete
-Next action: Commit, then /paul:unify to close loop, then Phase 18
-Resume file: .paul/phases/17-intake-fase/17-01-PLAN.md
+Stopped at: Phase 17 UNIFY complete
+Next action: /paul:plan Phase 18 (Adaptive Rounds — ConvergenceAgent)
+Resume file: .paul/phases/18-adaptive-rounds/ (to be created)
 
 ---
 *STATE.md -- Updated after every significant action*

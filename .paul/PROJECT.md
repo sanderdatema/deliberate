@@ -13,7 +13,7 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 | Attribute | Value |
 |-----------|-------|
 | Version | 0.6.0-dev |
-| Status | Phase 16 complete — per-persona model routing live |
+| Status | Phase 17 complete — intake fase live |
 | Last Updated | 2026-03-22 |
 
 ## Requirements
@@ -93,9 +93,18 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 - [x] Jony Ive herdefinieerd naar UI/UX reviewer (wat gebruikers zien)
 - [x] config.yaml presets bijgewerkt met nieuwe samenstelling
 
+### Validated (Shipped — v0.6, Phase 17)
+
+- [x] IntakeBrief dataclass (question, summary, clarifications: tuple, is_clear)
+- [x] _call_functional_agent() pattern voor subprocess zonder Persona
+- [x] _run_intake() met max-3 clarification loop via on_clarify callback
+- [x] Intake skipped voor code_* presets
+- [x] Intake-brief geïnjecteerd in alle analyst prompts als INTAKE CONTEXT:
+- [x] intake_started / intake_completed events in DeliberationEvent
+- [x] CLI on_clarify via stdin met isatty guard
+
 ### Active (v0.6 — remaining)
 
-- [ ] IntakeAgent: analyseert vraag op helderheid, produceert intake-brief
 - [ ] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt
 - [ ] DecisionMemory: JSON opslag van deliberaties, --history/--followup CLI flags
 - [ ] ThematicFormatter: thematische rapportage i.p.v. per-persona output
@@ -149,6 +158,8 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 | Jony Ive → UI/UX reviewer | UI/UX voor wat gebruikers zien was onderbelicht; Linus dekt code craft al | 2026-03-22 | Active |
 | Machiavelli vervangt Lupin | Sterkere karakter-functie fit: strategisch realist vs. Lupin's zwakke contrarian rol | 2026-03-22 | Active |
 | Config.model als fallback voor functionele agents | Intake/convergentie-agents hebben geen Persona object, hebben nog steeds model nodig | 2026-03-22 | Active |
+| _call_functional_agent gescheiden van _subprocess_call | Geen Persona-dependency; herbruikbaar patroon voor ConvergenceAgent (Phase 18) | 2026-03-22 | Active |
+| Intake skipped voor code_* presets | Code review heeft andere clarity-behoeften; intake is ontworpen voor open vragen | 2026-03-22 | Active |
 
 ## Tech Stack
 
@@ -171,4 +182,4 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 
 ---
 *Created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 16*
+*Last updated: 2026-03-22 after Phase 17*

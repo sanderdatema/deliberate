@@ -26,6 +26,12 @@ def _print_event(event: DeliberationEvent) -> None:
         case "intake_completed":
             status = "helder" if event.data.get("is_clear") else "verduidelijkt"
             print(f"  Intake {status}", file=sys.stderr)
+        case "team_selected":
+            analysts = event.data.get("analysts", [])
+            editors = event.data.get("editors", [])
+            print(f"  Team samengesteld: {len(analysts)} analisten, {len(editors)} editors", file=sys.stderr)
+            print(f"    Analisten: {', '.join(analysts)}", file=sys.stderr)
+            print(f"    Editors: {', '.join(editors)}", file=sys.stderr)
         case "round_started":
             print(f"  Ronde {event.round_number} gestart...", file=sys.stderr)
         case "agent_started":
@@ -62,7 +68,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--preset",
-        choices=["quick", "balanced", "deep", "code_quick", "code_balanced", "code_deep"],
+        choices=["quick", "balanced", "deep"],
         default=None,
         help="Preset te gebruiken (default: uit config.yaml)",
     )
@@ -101,8 +107,6 @@ async def _run(args: argparse.Namespace) -> int:
     personas_dir = resolve_personas_dir(args.personas_dir)
     config = ConfigLoader.load(config_path)
     personas = PersonaLoader.load_all(personas_dir)
-
-    ConfigLoader.validate_preset_personas(config, personas)
 
     # Set up web pusher if --web is specified
     web: WebPusher | None = None

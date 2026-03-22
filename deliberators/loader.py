@@ -137,10 +137,22 @@ class ConfigLoader:
                 raise ConfigLoadError(
                     f"preset '{name}': min_rounds ({min_rounds}) > max_rounds ({max_rounds})"
                 )
+            team_size = preset_data.get("team_size", 5)
+            editor_count = preset_data.get("editor_count", 2)
+            if team_size < 1:
+                raise ConfigLoadError(
+                    f"preset '{name}': team_size must be >= 1, got {team_size}"
+                )
+            if editor_count < 1:
+                raise ConfigLoadError(
+                    f"preset '{name}': editor_count must be >= 1, got {editor_count}"
+                )
             presets[name] = Preset(
                 name=name,
                 description=preset_data.get("description", ""),
                 max_rounds=max_rounds,
+                team_size=team_size,
+                editor_count=editor_count,
                 analysts=tuple(preset_data.get("analysts", [])),
                 editors=tuple(preset_data.get("editors", [])),
                 min_rounds=min_rounds,
@@ -165,19 +177,3 @@ class ConfigLoader:
             )
         return config.presets[name]
 
-    @staticmethod
-    def validate_preset_personas(config: Config, personas: dict[str, Persona]) -> None:
-        """Validate that all persona keys referenced in presets exist in the loaded personas.
-
-        Raises ValueError with a clear message listing which preset references
-        which missing persona(s).
-        """
-        missing: list[str] = []
-        for preset_name, preset in config.presets.items():
-            for name in preset.analysts + preset.editors:
-                if name not in personas:
-                    missing.append(f"preset '{preset_name}' references unknown persona '{name}'")
-        if missing:
-            raise ValueError(
-                f"Preset persona validation failed:\n  - " + "\n  - ".join(missing)
-            )

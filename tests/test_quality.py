@@ -15,16 +15,15 @@ from deliberators.engine import DeliberationEngine
 from deliberators.loader import ConfigLoader, PersonaLoader
 from deliberators.models import Config, DeliberationEvent, Persona
 
-# Reuse mock helpers from test_engine
-from tests.test_engine import make_mock_subprocess
+# Reuse mock helpers and test config from test_engine
+from tests.test_engine import make_mock_subprocess, _make_test_config
 
 PERSONAS_DIR = Path("personas")
-CONFIG_PATH = Path("config.yaml")
 
 
 @pytest.fixture()
 def config() -> Config:
-    return ConfigLoader.load(CONFIG_PATH)
+    return _make_test_config()
 
 
 @pytest.fixture()

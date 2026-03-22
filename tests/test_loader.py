@@ -292,14 +292,15 @@ class TestConfigLoader:
     def config(self):
         return ConfigLoader.load(CONFIG_PATH)
 
-    def test_loads_six_presets(self, config):
-        assert len(config.presets) == 6
+    def test_loads_three_presets(self, config):
+        assert len(config.presets) == 3
 
     def test_preset_names(self, config):
-        assert set(config.presets.keys()) == {
-            "quick", "balanced", "deep",
-            "code_quick", "code_balanced", "code_deep",
-        }
+        assert set(config.presets.keys()) == {"quick", "balanced", "deep"}
+
+    def test_no_code_presets(self, config):
+        for name in config.presets:
+            assert not name.startswith("code_"), f"code_* preset '{name}' should not exist"
 
     def test_default_preset(self, config):
         assert config.default_preset == "balanced"
@@ -307,17 +308,10 @@ class TestConfigLoader:
     def test_model(self, config):
         assert config.model == "opus"
 
-    def test_quick_preset_analysts(self, config):
+    def test_quick_preset_team_size(self, config):
         quick = config.presets["quick"]
-        assert quick.analysts == ("occam", "holmes", "machiavelli")
-
-    def test_quick_preset_has_two_editors(self, config):
-        """Regression test: config.yaml has 2 editors for quick (marx + samenvatter).
-        This was previously documented as 1 editor — see AC-3."""
-        quick = config.presets["quick"]
-        assert len(quick.editors) == 2
-        assert "marx" in quick.editors
-        assert "samenvatter" in quick.editors
+        assert quick.team_size == 3
+        assert quick.editor_count == 1
 
     def test_quick_preset_one_round(self, config):
         assert config.presets["quick"].max_rounds == 1
@@ -325,15 +319,15 @@ class TestConfigLoader:
 
     def test_balanced_preset(self, config):
         balanced = config.presets["balanced"]
-        assert len(balanced.analysts) == 5
-        assert len(balanced.editors) == 4  # marx, hegel, arendt, samenvatter
+        assert balanced.team_size == 5
+        assert balanced.editor_count == 2
         assert balanced.max_rounds == 2
         assert balanced.min_rounds == 1
 
     def test_deep_preset(self, config):
         deep = config.presets["deep"]
-        assert len(deep.analysts) == 8
-        assert len(deep.editors) == 4
+        assert deep.team_size == 8
+        assert deep.editor_count == 3
         assert deep.max_rounds == 3
         assert deep.min_rounds == 1
 
@@ -356,78 +350,6 @@ class TestConfigLoaderValidation:
             ConfigLoader.load(path)
 
 
-class TestValidatePresetPersonas:
-    """AC-2: Preset persona validation catches missing personas."""
-
-    def test_valid_config_passes(self):
-        """All standard presets pass validation with all standard personas loaded."""
-        config = ConfigLoader.load(CONFIG_PATH)
-        personas = PersonaLoader.load_all(PERSONAS_DIR)
-        # Should not raise
-        ConfigLoader.validate_preset_personas(config, personas)
-
-    def test_missing_analyst_raises(self):
-        """Preset referencing non-existent analyst raises ValueError."""
-        from deliberators.models import Config, Preset
-
-        config = Config(
-            default_preset="test",
-            rounds=1,
-            model="opus",
-            presets={
-                "test": Preset(
-                    name="test",
-                    description="Test preset",
-                    max_rounds=1,
-                    analysts=("nonexistent-persona",),
-                    editors=(),
-                ),
-            },
-        )
-        with pytest.raises(ValueError, match="nonexistent-persona"):
-            ConfigLoader.validate_preset_personas(config, {})
-
-    def test_missing_editor_raises(self):
-        """Preset referencing non-existent editor raises ValueError."""
-        from deliberators.models import Config, Preset
-
-        config = Config(
-            default_preset="test",
-            rounds=1,
-            model="opus",
-            presets={
-                "test": Preset(
-                    name="test",
-                    description="Test preset",
-                    max_rounds=1,
-                    analysts=(),
-                    editors=("ghost-editor",),
-                ),
-            },
-        )
-        with pytest.raises(ValueError, match="ghost-editor"):
-            ConfigLoader.validate_preset_personas(config, {})
-
-    def test_error_message_includes_preset_name(self):
-        """Error message tells you which preset has the problem."""
-        from deliberators.models import Config, Preset
-
-        config = Config(
-            default_preset="broken",
-            rounds=1,
-            model="opus",
-            presets={
-                "broken": Preset(
-                    name="broken",
-                    description="Broken preset",
-                    max_rounds=1,
-                    analysts=("missing",),
-                    editors=(),
-                ),
-            },
-        )
-        with pytest.raises(ValueError, match="preset 'broken'"):
-            ConfigLoader.validate_preset_personas(config, {})
 
 
 class TestResolvePathFallback:

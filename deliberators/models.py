@@ -28,8 +28,10 @@ class Preset:
     name: str
     description: str
     max_rounds: int
-    analysts: tuple[str, ...]
-    editors: tuple[str, ...]
+    team_size: int = 5
+    editor_count: int = 2
+    analysts: tuple[str, ...] = ()
+    editors: tuple[str, ...] = ()
     min_rounds: int = 1
     summarizer: str | None = None
 
@@ -73,6 +75,7 @@ class DeliberationEvent:
         "deliberation_started",
         "intake_started",
         "intake_completed",
+        "team_selected",
         "agent_started",
         "agent_completed",
         "round_started",

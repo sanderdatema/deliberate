@@ -14,6 +14,7 @@ Parse $ARGUMENTS for flags:
 - If `--preset quick` is present: use the "quick" preset, remove the flag from the question
 - If `--preset deep` is present: use the "deep" preset, remove the flag from the question
 - If `--preset balanced` is present or no flag: use the "balanced" preset
+- If `--files path1 path2 ...` is present: extract file paths, remove from question. These will be read as code context for code review.
 - If `--web` is present: enable live web viewer (see Web Viewer Integration below)
 - Everything remaining after stripping flags is the **question**
 
@@ -89,27 +90,22 @@ Use these resolved paths in all subsequent Read tool calls. If the command fails
 
 ## Step 1: Load Configuration & Personas
 
-1. Read config from **CONFIG_PATH** (resolved in Step 0.5). It defines presets with analyst/editor lists and round counts.
+1. Read config from **CONFIG_PATH** (resolved in Step 0.5). It defines presets with `team_size`, `editor_count`, and round counts. Presets no longer contain fixed analyst/editor lists — the team selection agent assembles teams dynamically.
 
-2. Based on the selected preset, determine:
-   - Which analyst persona files to load (by filename without .yaml)
-   - Which editor persona files to load
-   - How many rounds to run
+2. Read ALL persona YAML files from **PERSONAS_DIR** (54 personas). The team selection agent will choose the optimal subset.
 
-3. Read only the YAML files listed in the preset from **PERSONAS_DIR** (resolved in Step 0.5).
+3. If `--files` was provided, read the code files as context (same as the former `/deliberate-code` command).
 
-4. **Custom persona support:** After loading preset personas, check if any additional .yaml files exist in **PERSONAS_DIR** that are NOT in the standard 25 (socrates, occam, da-vinci, holmes, lupin, templar, tubman, weil, marple, noether, ibn-khaldun, marx, hegel, arendt, samenvatter, linus, kent-beck, fowler, schneier, jobs, don-norman, jony-ive, christensen, hopper, code-synthesizer) and NOT schema.yaml. If found, validate they have the required fields (name, role, system_prompt, forbidden) and add them as extra analysts or editors based on their role. Display: `Custom persona geladen: {name}`
-
-5. Display the configuration:
+4. Display the configuration:
 ```
 Deliberatie gestart met preset: {preset_name}
-Analisten: {count} | Editors: {count} | Rondes: {rounds}
+Team grootte: {team_size} analisten + {editor_count} editors | Rondes: {rounds}
 ```
 
 **Preset reference:**
-- **quick:** 3 analysts (Occam, Holmes, Lupin) + 2 editors (Marx, Samenvatter), 1 round
-- **balanced:** 5 analysts (Socrates, Occam, Da Vinci, Holmes, Lupin) + 3 editors (Marx, Hegel, Arendt), 2 rounds
-- **deep:** 10 analysts (all) + 3 editors (all), 2 rounds
+- **quick:** 3 analysts + 1 editor, 1 round
+- **balanced:** 5 analysts + 2 editors, 2 rounds
+- **deep:** 8 analysts + 3 editors, max 3 rounds
 
 ## Step 2: Ronde 1 — Onafhankelijke Analyse (Parallel)
 

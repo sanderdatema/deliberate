@@ -38,6 +38,23 @@ dimensions to explore. Write in the same language as the question.]
 
 _MAX_CLARIFICATION_ROUNDS = 3
 
+_TEAM_SELECTION_SYSTEM_PROMPT = """\
+You are a team selection agent for a multi-perspective deliberation system.
+Your job is to select the optimal team of analysts and editors from a pool of \
+expert personas to deliberate on the given question.
+
+Select personas whose expertise domains are most relevant to the question.
+Ensure diversity of perspective — avoid selecting personas with highly overlapping domains.
+
+GENDER BALANCE: Select a team with at least 40% representation of each binary \
+gender (M/F) when the pool allows. Include non-binary personas where relevant.
+
+Output EXACTLY this structure (no other text before or after):
+ANALYSTS: name1, name2, name3
+EDITORS: name1, name2
+REASON: [1-2 sentences explaining your selection rationale]
+"""
+
 _CONVERGENCE_SYSTEM_PROMPT = """\
 You are a convergence analyst for a multi-perspective deliberation system.
 After each analyst round, you evaluate whether continuing with another round \
@@ -99,11 +116,19 @@ class DeliberationEngine:
 
         await self._emit(DeliberationEvent(type="deliberation_started", data={"preset": preset_name}))
 
-        # Intake phase (skip for code presets)
+        # Intake phase (always runs)
         intake_brief: IntakeBrief | None = None
-        if not preset_name.startswith("code_"):
-            intake_brief = await self._run_intake(question)
-            result.intake_brief = intake_brief
+        intake_brief = await self._run_intake(question)
+        result.intake_brief = intake_brief
+
+        # Team selection: use fixed lists if preset has them, otherwise dynamic selection
+        if preset.analysts and preset.editors:
+            analyst_names = list(preset.analysts)
+            editor_names = list(preset.editors)
+        else:
+            analyst_names, editor_names = await self._run_team_selection(
+                question, preset, intake_brief, code_context,
+            )
 
         # Analyst rounds (adaptive: min_rounds guaranteed, then convergence check)
         round_num = 0
@@ -111,7 +136,7 @@ class DeliberationEngine:
             round_num += 1
             prior_output = result.rounds.get(round_num - 1) if round_num > 1 else None
             round_output = await self._run_analyst_round(
-                round_num, preset.analysts, question, prior_output,
+                round_num, analyst_names, question, prior_output,
                 code_context, intake_brief,
             )
             result.rounds[round_num] = round_output
@@ -130,7 +155,7 @@ class DeliberationEngine:
         all_analyst_output = self._compile_analyst_output(result.rounds)
         prior_editor_output: dict[str, str] = {}
 
-        for editor_name in preset.editors:
+        for editor_name in editor_names:
             if editor_name not in self.personas:
                 logger.warning("Editor persona '%s' not found, skipping", editor_name)
                 continue
@@ -161,7 +186,7 @@ class DeliberationEngine:
     async def _run_analyst_round(
         self,
         round_num: int,
-        analyst_names: list[str],
+        analyst_names: list[str] | tuple[str, ...],
         question: str,
         prior_round_output: dict[str, str] | None,
         code_context: str | None = None,
@@ -350,6 +375,94 @@ class DeliberationEngine:
         ))
 
         return brief
+
+    def _build_persona_catalog(self) -> str:
+        """Build a catalog of all personas for the team selection agent."""
+        lines = []
+        for key, persona in sorted(self.personas.items()):
+            gender = "?"
+            # Infer gender from name heuristics or just list domains
+            domains = ", ".join(persona.domains)
+            lines.append(f"- {key} | role={persona.role} | domains={domains}")
+        return "\n".join(lines)
+
+    @staticmethod
+    def _parse_team_selection_output(
+        output: str, available_personas: dict[str, Persona],
+    ) -> tuple[list[str], list[str], str]:
+        """Parse team selection output into (analysts, editors, reason)."""
+        analysts: list[str] = []
+        editors: list[str] = []
+        reason = ""
+
+        for line in output.splitlines():
+            stripped = line.strip()
+            if stripped.upper().startswith("ANALYSTS:"):
+                names = stripped.split(":", 1)[1].strip()
+                analysts = [n.strip() for n in names.split(",") if n.strip()]
+            elif stripped.upper().startswith("EDITORS:"):
+                names = stripped.split(":", 1)[1].strip()
+                editors = [n.strip() for n in names.split(",") if n.strip()]
+            elif stripped.upper().startswith("REASON:"):
+                reason = stripped.split(":", 1)[1].strip()
+
+        # Validate: only keep names that exist in personas
+        valid_analysts = [n for n in analysts if n in available_personas and available_personas[n].role == "analyst"]
+        valid_editors = [n for n in editors if n in available_personas and available_personas[n].role == "editor"]
+
+        return valid_analysts, valid_editors, reason
+
+    async def _run_team_selection(
+        self,
+        question: str,
+        preset: Preset,
+        intake_brief: IntakeBrief | None = None,
+        code_context: str | None = None,
+    ) -> tuple[list[str], list[str]]:
+        """Select analysts and editors from the pool using a functional agent."""
+        catalog = self._build_persona_catalog()
+
+        prompt_parts = []
+        if intake_brief and intake_brief.summary:
+            prompt_parts.append(f"QUESTION CONTEXT:\n{intake_brief.summary}")
+        prompt_parts.append(f"QUESTION:\n{question}")
+        if code_context:
+            prompt_parts.append(
+                "NOTE: The user is requesting a code review. "
+                "Prioritize code-focused personas (security, testing, architecture, etc.)."
+            )
+        prompt_parts.append(f"TEAM SIZE: Select exactly {preset.team_size} analysts and {preset.editor_count} editors.")
+        prompt_parts.append(f"AVAILABLE PERSONAS:\n{catalog}")
+
+        prompt = "\n\n".join(prompt_parts)
+
+        output = await self._call_functional_agent(
+            _TEAM_SELECTION_SYSTEM_PROMPT, prompt, self.config.model,
+        )
+
+        analysts, editors, reason = self._parse_team_selection_output(output, self.personas)
+
+        # Fallback: if selection is empty or insufficient, use preset overrides
+        if not analysts or not editors:
+            if preset.analysts and preset.editors:
+                logger.warning("Team selection failed, falling back to preset fixed lists")
+                return list(preset.analysts), list(preset.editors)
+            # Last resort: pick first N analysts and editors from pool
+            logger.warning("Team selection failed with no preset fallback, picking from pool")
+            all_analysts = [k for k, p in self.personas.items() if p.role == "analyst"]
+            all_editors = [k for k, p in self.personas.items() if p.role == "editor"]
+            return all_analysts[:preset.team_size], all_editors[:preset.editor_count]
+
+        await self._emit(DeliberationEvent(
+            type="team_selected",
+            data={
+                "analysts": analysts,
+                "editors": editors,
+                "reason": reason,
+            },
+        ))
+
+        return analysts, editors
 
     @staticmethod
     def _parse_convergence_output(output: str) -> dict[str, str]:

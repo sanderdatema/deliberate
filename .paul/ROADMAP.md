@@ -122,7 +122,7 @@ Phases: 3 of 3 complete
 
 ### v0.6 Adaptive Deliberation
 Status: **In progress**
-Phases: 4 of 7 complete
+Phases: 5 of 7 complete
 
 Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model routing, intake fase, adaptive rounds, genderdiversiteit, dynamische teamselectie, decision memory, en thematische rapportage.
 
@@ -132,7 +132,7 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 | 17 | Intake Fase | 1 | ✅ Complete | 2026-03-22 |
 | 18 | Adaptive Rounds | 1 | Complete | 2026-03-22 |
 | 19 | Pool Expansion | 2 | Complete | 2026-03-22 |
-| 20 | Dynamic Team Selection | 1 | Not started | |
+| 20 | Dynamic Team Selection | 1 | Complete | 2026-03-22 |
 | 21 | Decision Memory | 1 | Not started | |
 | 22 | Rapportage Redesign | 1 | Not started | |
 
@@ -156,12 +156,8 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 
 **Depends on:** Phase 16 (model routing — nieuwe personas krijgen model field)
 
-### Phase 20: Dynamic Team Selection
-**Focus:** Intake agent wordt teamsamensteller — analyseert vraag en selecteert optimaal team uit volledige pool. `/deliberate-code` verdwijnt, één unified `/deliberate` command. Presets worden pool-hints i.p.v. vaste lijsten. Cross-domein teams mogelijk (Thunberg + Jobs bij duurzame productvisie, Clarke + Schneier bij security, Shakespeare + McKellen bij communicatie-strategie). Intake agent matcht op `domains` veld + vraaganalyse.
-
-**Genderbalans als selectiecriterium:** Intake agent moet bij teamselectie actief letten op genderbalans — niet alleen de pool is divers, elk samengesteld team moet dat ook zijn.
-
-**Depends on:** Phase 19 (grotere, domein-getagde pool), Phase 17 (intake-agent)
+### Phase 20: Dynamic Team Selection ✅
+- [x] 20-01: TeamSelectionAgent + unified /deliberate command + preset as pool-hint (2026-03-22)
 
 ### Phase 21: Decision Memory
 **Focus:** Structured JSON opslag van deliberaties. CLI flags voor history en follow-up.
@@ -175,4 +171,4 @@ Upgrade van one-shot deliberatie naar adaptief denksysteem: per-persona model ro
 
 ---
 *Roadmap created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 19 complete — pool expanded to 54 personas*
+*Last updated: 2026-03-22 after Phase 20 complete — dynamic team selection + unified command*

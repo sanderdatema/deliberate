@@ -91,9 +91,57 @@ def make_mock_subprocess(
     return SubprocessTracker(response_map=response_map, default=default)
 
 
+def _make_test_config() -> Config:
+    """Build a Config with fixed analyst/editor lists for deterministic tests.
+
+    The real config.yaml no longer has fixed lists (team selection is dynamic),
+    but engine tests need deterministic team composition.
+    """
+    return Config(
+        default_preset="balanced",
+        rounds=2,
+        model="opus",
+        presets={
+            "quick": Preset(
+                name="quick",
+                description="Quick test preset",
+                max_rounds=1,
+                min_rounds=1,
+                team_size=3,
+                editor_count=2,
+                analysts=("occam", "holmes", "machiavelli"),
+                editors=("marx", "samenvatter"),
+                summarizer="samenvatter",
+            ),
+            "balanced": Preset(
+                name="balanced",
+                description="Balanced test preset",
+                max_rounds=2,
+                min_rounds=1,
+                team_size=5,
+                editor_count=4,
+                analysts=("socrates", "occam", "da-vinci", "holmes", "machiavelli"),
+                editors=("marx", "hegel", "arendt", "samenvatter"),
+                summarizer="samenvatter",
+            ),
+            "deep": Preset(
+                name="deep",
+                description="Deep test preset",
+                max_rounds=3,
+                min_rounds=1,
+                team_size=8,
+                editor_count=4,
+                analysts=("socrates", "occam", "da-vinci", "holmes", "machiavelli", "templar", "tubman", "ibn-khaldun"),
+                editors=("marx", "hegel", "arendt", "samenvatter"),
+                summarizer="samenvatter",
+            ),
+        },
+    )
+
+
 @pytest.fixture()
 def config() -> Config:
-    return ConfigLoader.load(CONFIG_PATH)
+    return _make_test_config()
 
 
 @pytest.fixture()
@@ -536,20 +584,6 @@ class TestSummarizerConfig:
         assert "marx" in result.editor_outputs
         assert "samenvatter" in result.editor_outputs
 
-    @pytest.mark.asyncio
-    async def test_code_preset_has_no_summarizer(
-        self, config: Config, personas: dict[str, Persona]
-    ) -> None:
-        """Code presets have no summarizer — code-synthesizer goes to editor_outputs."""
-        tracker = make_mock_subprocess()
-        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
-            engine = DeliberationEngine(config, personas)
-            result = await engine.run("Review code", "code_quick")
-
-        assert result.samenvatter_output is None
-        assert "code-synthesizer" in result.editor_outputs
-
-
 class TestAgentErrorHandling:
     """AC-4: Error handling per agent — failed agents don't crash the deliberation."""
 
@@ -985,23 +1019,6 @@ class TestIntakePhase:
         assert types.index("intake_completed") < types.index("round_started")
 
     @pytest.mark.asyncio
-    async def test_intake_skipped_for_code_presets(self, config: Config, personas: dict[str, Persona]) -> None:
-        """Code presets do not run the intake phase."""
-        events: list[DeliberationEvent] = []
-
-        async def collect(event: DeliberationEvent) -> None:
-            events.append(event)
-
-        tracker = make_mock_subprocess()
-        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
-            engine = DeliberationEngine(config, personas, on_event=collect)
-            result = await engine.run("Review code", "code_quick")
-
-        types = [e.type for e in events]
-        assert "intake_started" not in types
-        assert result.intake_brief is None
-
-    @pytest.mark.asyncio
     async def test_no_clarification_when_callback_none(self, config: Config, personas: dict[str, Persona]) -> None:
         """When on_clarify is None, unclear questions proceed without clarification."""
         tracker = make_mock_subprocess(default="IS_CLEAR: no\nCLARIFICATION_QUESTION: What do you mean?\nBRIEF: Ambiguous question")
@@ -1265,3 +1282,203 @@ class TestConvergencePhase:
         assert len(conv_events) >= 1
         assert "should_continue" in conv_events[0].data
         assert "reason" in conv_events[0].data
+
+
+class TestParseTeamSelectionOutput:
+    """Unit tests for _parse_team_selection_output."""
+
+    @pytest.fixture()
+    def mock_personas(self) -> dict[str, Persona]:
+        """Minimal persona dict for team selection parsing tests."""
+        def _p(name: str, role: str = "analyst") -> Persona:
+            return Persona(
+                name=name, model="sonnet", domains=("testing",), role=role,
+                reasoning_style="test", forbidden=("a", "b"),
+                focus="test", output_format={},
+                system_prompt="You are FORBIDDEN from X. You MUST NOT Y.",
+            )
+        return {
+            "socrates": _p("Socrates"),
+            "occam": _p("Occam"),
+            "holmes": _p("Holmes"),
+            "marx": _p("Marx", "editor"),
+            "samenvatter": _p("Samenvatter", "editor"),
+        }
+
+    def test_parse_valid_output(self, mock_personas: dict[str, Persona]) -> None:
+        output = "ANALYSTS: socrates, occam, holmes\nEDITORS: marx, samenvatter\nREASON: Good team"
+        analysts, editors, reason = DeliberationEngine._parse_team_selection_output(output, mock_personas)
+        assert analysts == ["socrates", "occam", "holmes"]
+        assert editors == ["marx", "samenvatter"]
+        assert reason == "Good team"
+
+    def test_filters_invalid_names(self, mock_personas: dict[str, Persona]) -> None:
+        output = "ANALYSTS: socrates, nonexistent, occam\nEDITORS: marx\nREASON: test"
+        analysts, editors, reason = DeliberationEngine._parse_team_selection_output(output, mock_personas)
+        assert analysts == ["socrates", "occam"]
+        assert editors == ["marx"]
+
+    def test_filters_wrong_role(self, mock_personas: dict[str, Persona]) -> None:
+        """Editors can't be selected as analysts and vice versa."""
+        output = "ANALYSTS: socrates, marx\nEDITORS: occam\nREASON: test"
+        analysts, editors, reason = DeliberationEngine._parse_team_selection_output(output, mock_personas)
+        assert analysts == ["socrates"]  # marx is editor, filtered out
+        assert editors == []  # occam is analyst, filtered out
+
+    def test_parse_empty_output(self, mock_personas: dict[str, Persona]) -> None:
+        analysts, editors, reason = DeliberationEngine._parse_team_selection_output("", mock_personas)
+        assert analysts == []
+        assert editors == []
+        assert reason == ""
+
+
+class TestTeamSelection:
+    """Integration tests for dynamic team selection."""
+
+    @pytest.mark.asyncio
+    async def test_dynamic_selection_used_when_no_fixed_lists(self, personas: dict[str, Persona]) -> None:
+        """When preset has no fixed analysts/editors, team selection agent is called."""
+        dynamic_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="Dynamic test", max_rounds=1,
+                    team_size=2, editor_count=1,
+                    summarizer="samenvatter",
+                ),
+            },
+        )
+
+        async def mock_functional(self_engine, system_prompt, prompt, model):
+            if "team selection" in system_prompt.lower():
+                return "ANALYSTS: socrates, occam\nEDITORS: samenvatter\nREASON: Best fit"
+            if "intake analyst" in system_prompt.lower():
+                return "IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: Clear question"
+            if "convergence" in system_prompt.lower():
+                return "CONTINUE: no\nREASON: Done"
+            return "Mock output"
+
+        tracker = make_mock_subprocess()
+        with (
+            patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
+            patch.object(DeliberationEngine, "_call_functional_agent", mock_functional),
+        ):
+            engine = DeliberationEngine(dynamic_config, personas)
+            result = await engine.run("What is justice?", "test")
+
+        # Should have used dynamically selected analysts
+        assert "socrates" in result.rounds[1]
+        assert "occam" in result.rounds[1]
+        assert result.samenvatter_output is not None
+
+    @pytest.mark.asyncio
+    async def test_fixed_lists_bypass_team_selection(self, config: Config, personas: dict[str, Persona]) -> None:
+        """When preset has fixed analysts/editors, team selection is skipped."""
+        events: list[DeliberationEvent] = []
+
+        async def collect(event: DeliberationEvent) -> None:
+            events.append(event)
+
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=collect)
+            await engine.run("Test question", "quick")
+
+        types = [e.type for e in events]
+        assert "team_selected" not in types
+
+    @pytest.mark.asyncio
+    async def test_team_selected_event_emitted(self, personas: dict[str, Persona]) -> None:
+        """team_selected event is emitted during dynamic selection."""
+        dynamic_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="Dynamic test", max_rounds=1,
+                    team_size=2, editor_count=1,
+                    summarizer="samenvatter",
+                ),
+            },
+        )
+        events: list[DeliberationEvent] = []
+
+        async def collect(event: DeliberationEvent) -> None:
+            events.append(event)
+
+        async def mock_functional(self_engine, system_prompt, prompt, model):
+            if "team selection" in system_prompt.lower():
+                return "ANALYSTS: socrates, occam\nEDITORS: samenvatter\nREASON: Best fit"
+            if "intake analyst" in system_prompt.lower():
+                return "IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: Clear"
+            return "Mock output"
+
+        tracker = make_mock_subprocess()
+        with (
+            patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
+            patch.object(DeliberationEngine, "_call_functional_agent", mock_functional),
+        ):
+            engine = DeliberationEngine(dynamic_config, personas, on_event=collect)
+            await engine.run("What is justice?", "test")
+
+        types = [e.type for e in events]
+        assert "team_selected" in types
+        team_event = next(e for e in events if e.type == "team_selected")
+        assert team_event.data["analysts"] == ["socrates", "occam"]
+        assert team_event.data["editors"] == ["samenvatter"]
+
+    @pytest.mark.asyncio
+    async def test_code_context_hint_in_team_selection(self, personas: dict[str, Persona]) -> None:
+        """When code_context is provided, team selection prompt includes code hint."""
+        dynamic_config = Config(
+            default_preset="test",
+            rounds=1,
+            model="opus",
+            presets={
+                "test": Preset(
+                    name="test", description="Dynamic test", max_rounds=1,
+                    team_size=2, editor_count=1,
+                    summarizer="samenvatter",
+                ),
+            },
+        )
+        received_prompts: list[str] = []
+
+        async def mock_functional(self_engine, system_prompt, prompt, model):
+            if "team selection" in system_prompt.lower():
+                received_prompts.append(prompt)
+                return "ANALYSTS: linus, schneier\nEDITORS: code-synthesizer\nREASON: Code review"
+            if "intake analyst" in system_prompt.lower():
+                return "IS_CLEAR: yes\nCLARIFICATION_QUESTION: none\nBRIEF: Code review"
+            return "Mock output"
+
+        tracker = make_mock_subprocess()
+        with (
+            patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)),
+            patch.object(DeliberationEngine, "_call_functional_agent", mock_functional),
+        ):
+            engine = DeliberationEngine(dynamic_config, personas)
+            await engine.run("Review this", "test", code_context="def foo(): pass")
+
+        assert len(received_prompts) == 1
+        assert "code review" in received_prompts[0].lower()
+
+    @pytest.mark.asyncio
+    async def test_intake_always_runs(self, config: Config, personas: dict[str, Persona]) -> None:
+        """Intake runs for all presets, including when code_context is provided."""
+        events: list[DeliberationEvent] = []
+
+        async def collect(event: DeliberationEvent) -> None:
+            events.append(event)
+
+        tracker = make_mock_subprocess()
+        with patch("deliberators.engine.asyncio.create_subprocess_exec", new=AsyncMock(side_effect=tracker)):
+            engine = DeliberationEngine(config, personas, on_event=collect)
+            await engine.run("Review this code", "quick", code_context="def foo(): pass")
+
+        types = [e.type for e in events]
+        assert "intake_started" in types
+        assert "intake_completed" in types

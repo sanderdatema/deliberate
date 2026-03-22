@@ -13,7 +13,7 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 | Attribute | Value |
 |-----------|-------|
 | Version | 0.6.0-dev |
-| Status | Phase 19 complete — 54 persona pool live |
+| Status | Phase 20 complete — dynamic team selection + unified command |
 | Last Updated | 2026-03-22 |
 
 ## Requirements
@@ -105,9 +105,9 @@ Gebruikers krijgen diepere, meer genuanceerde antwoorden op complexe vragen door
 
 ### Active (v0.6 — remaining)
 
-- [ ] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt (Phase 18)
+- [x] ConvergenceAgent: evalueert per ronde of doorgaan waarde toevoegt (Phase 18)
 - [x] Pool Expansion: 54 persona's met domains veld — Clarke, Hamilton, Liskov, Lovelace, Lamarr, Turing, Lupin, Thorbecke, Shakespeare, Kahneman, Taleb, etc. Genderdiversiteit: 23F/28M/3N (Phase 19)
-- [ ] Dynamic Team Selection: intake als teamsamensteller, /deliberate-code merged in /deliberate, cross-domein teams, matchen op expertise-domains (Phase 20)
+- [x] Dynamic Team Selection: TeamSelectionAgent selecteert uit 54-pool, unified /deliberate command, presets als team shape hints, ≥40% genderbalans (Phase 20)
 - [ ] DecisionMemory: JSON opslag van deliberaties, --history/--followup CLI flags (Phase 21)
 - [ ] ThematicFormatter: thematische rapportage i.p.v. per-persona output (Phase 22)
 
@@ -161,7 +161,9 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 | Machiavelli vervangt Lupin | Sterkere karakter-functie fit: strategisch realist vs. Lupin's zwakke contrarian rol | 2026-03-22 | Active |
 | Config.model als fallback voor functionele agents | Intake/convergentie-agents hebben geen Persona object, hebben nog steeds model nodig | 2026-03-22 | Active |
 | _call_functional_agent gescheiden van _subprocess_call | Geen Persona-dependency; herbruikbaar patroon voor ConvergenceAgent (Phase 18) | 2026-03-22 | Active |
-| Intake skipped voor code_* presets | Code review heeft andere clarity-behoeften; intake is ontworpen voor open vragen | 2026-03-22 | Active |
+| Intake skipped voor code_* presets | Vervallen in Phase 20 — unified command, intake altijd actief | 2026-03-22 | Superseded |
+| TeamSelectionAgent als 3e functionele agent | Dynamische teamselectie uit 54-pool, presets als shape hint | 2026-03-22 | Active |
+| Unified /deliberate command | /deliberate-code gemerged, --files werkt met elk preset | 2026-03-22 | Active |
 
 ## Tech Stack
 
@@ -184,4 +186,4 @@ Martijn Aslanders artikel over zijn "Magische Dertien" — een team van virtuele
 
 ---
 *Created: 2026-03-18*
-*Last updated: 2026-03-22 after Phase 19 complete — pool expanded to 54 personas*
+*Last updated: 2026-03-22 after Phase 20 complete — dynamic team selection + unified command*

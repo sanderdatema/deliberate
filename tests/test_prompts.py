@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from deliberators.models import DecisionRecord, IntakeBrief, Persona
+from deliberators.models import Preset
 from deliberators.prompts import (
     build_analyst_prompt,
+    build_convergence_prompt,
     build_editor_prompt,
     build_persona_catalog,
+    build_synthesis_prompt,
+    build_team_selection_prompt,
     compile_analyst_output,
 )
 
@@ -104,6 +108,102 @@ class TestBuildEditorPrompt:
         )
         assert "PRIOR EDITORIAL ANALYSIS" in prompt
         assert "First editorial" in prompt
+
+
+class TestBuildTeamSelectionPrompt:
+    def _preset(self, team_size: int = 3, editor_count: int = 1) -> Preset:
+        return Preset(
+            name="quick", description="", max_rounds=1,
+            team_size=team_size, editor_count=editor_count,
+        )
+
+    def test_includes_question(self) -> None:
+        prompt = build_team_selection_prompt({}, "What is justice?", self._preset())
+        assert "What is justice?" in prompt
+
+    def test_includes_team_size(self) -> None:
+        prompt = build_team_selection_prompt({}, "Q", self._preset(team_size=4, editor_count=2))
+        assert "4 analysts" in prompt
+        assert "2 editors" in prompt
+
+    def test_includes_catalog(self) -> None:
+        personas = {"alice": _persona("Alice")}
+        prompt = build_team_selection_prompt(personas, "Q", self._preset())
+        assert "alice" in prompt
+
+    def test_includes_intake_brief(self) -> None:
+        brief = IntakeBrief(question="Q", summary="About justice", clarifications=(), is_clear=True)
+        prompt = build_team_selection_prompt({}, "Q", self._preset(), intake_brief=brief)
+        assert "QUESTION CONTEXT" in prompt
+        assert "About justice" in prompt
+
+    def test_skips_intake_brief_when_no_summary(self) -> None:
+        brief = IntakeBrief(question="Q", summary="", clarifications=(), is_clear=True)
+        prompt = build_team_selection_prompt({}, "Q", self._preset(), intake_brief=brief)
+        assert "QUESTION CONTEXT" not in prompt
+
+    def test_includes_code_review_note_when_code_context(self) -> None:
+        prompt = build_team_selection_prompt({}, "Q", self._preset(), code_context="def foo(): pass")
+        assert "code review" in prompt.lower()
+
+    def test_no_code_review_note_without_code_context(self) -> None:
+        prompt = build_team_selection_prompt({}, "Q", self._preset())
+        assert "code review" not in prompt.lower()
+
+
+class TestBuildConvergencePrompt:
+    def test_includes_round_output(self) -> None:
+        prompt = build_convergence_prompt(1, {"socrates": "Justice is harmony"})
+        assert "Justice is harmony" in prompt
+        assert "### socrates" in prompt
+
+    def test_includes_round_number(self) -> None:
+        prompt = build_convergence_prompt(2, {"socrates": "Output"})
+        assert "ROUND 2" in prompt
+        assert "Round 3" in prompt
+
+    def test_includes_intake_brief(self) -> None:
+        brief = IntakeBrief(question="Q", summary="Context summary", clarifications=(), is_clear=True)
+        prompt = build_convergence_prompt(1, {}, intake_brief=brief)
+        assert "QUESTION CONTEXT" in prompt
+        assert "Context summary" in prompt
+
+    def test_skips_intake_when_no_summary(self) -> None:
+        brief = IntakeBrief(question="Q", summary="", clarifications=(), is_clear=True)
+        prompt = build_convergence_prompt(1, {}, intake_brief=brief)
+        assert "QUESTION CONTEXT" not in prompt
+
+
+class TestBuildSynthesisPrompt:
+    def test_includes_question(self) -> None:
+        prompt = build_synthesis_prompt("What is justice?", "analyst output", {}, None, 1)
+        assert "What is justice?" in prompt
+
+    def test_includes_analyst_output(self) -> None:
+        prompt = build_synthesis_prompt("Q", "Analyst perspective here", {}, None, 1)
+        assert "Analyst perspective here" in prompt
+
+    def test_includes_num_rounds(self) -> None:
+        prompt = build_synthesis_prompt("Q", "", {}, None, 3)
+        assert "3" in prompt
+
+    def test_includes_editor_output(self) -> None:
+        prompt = build_synthesis_prompt("Q", "", {"marx": "Editorial view"}, None, 1)
+        assert "EDITORIAL ANALYSIS" in prompt
+        assert "Editorial view" in prompt
+
+    def test_skips_editorial_when_empty(self) -> None:
+        prompt = build_synthesis_prompt("Q", "", {}, None, 1)
+        assert "EDITORIAL ANALYSIS" not in prompt
+
+    def test_includes_samenvatter(self) -> None:
+        prompt = build_synthesis_prompt("Q", "", {}, "Summary conclusion", 1)
+        assert "SAMENVATTER" in prompt
+        assert "Summary conclusion" in prompt
+
+    def test_skips_samenvatter_when_none(self) -> None:
+        prompt = build_synthesis_prompt("Q", "", {}, None, 1)
+        assert "SAMENVATTER" not in prompt
 
 
 class TestCompileAnalystOutput:

@@ -6,7 +6,7 @@ touching the engine's subprocess or callback machinery.
 
 from __future__ import annotations
 
-from deliberators.models import DecisionRecord, IntakeBrief, Persona
+from deliberators.models import DecisionRecord, IntakeBrief, Persona, Preset
 
 
 def build_persona_catalog(personas: dict[str, Persona]) -> str:
@@ -112,3 +112,66 @@ def compile_analyst_output(rounds: dict[int, dict[str, str]]) -> str:
         for name, output in rounds[round_num].items():
             sections.append(f"### {name}\n{output}")
     return "\n\n".join(sections)
+
+
+def build_team_selection_prompt(
+    personas: dict[str, Persona],
+    question: str,
+    preset: Preset,
+    intake_brief: IntakeBrief | None = None,
+    code_context: str | None = None,
+) -> str:
+    """Build the prompt for the team selection agent."""
+    catalog = build_persona_catalog(personas)
+    parts = []
+    if intake_brief and intake_brief.summary:
+        parts.append(f"QUESTION CONTEXT:\n{intake_brief.summary}")
+    parts.append(f"QUESTION:\n{question}")
+    if code_context:
+        parts.append(
+            "NOTE: The user is requesting a code review. "
+            "Prioritize code-focused personas (security, testing, architecture, etc.)."
+        )
+    parts.append(f"TEAM SIZE: Select exactly {preset.team_size} analysts and {preset.editor_count} editors.")
+    parts.append(f"AVAILABLE PERSONAS:\n{catalog}")
+    return "\n\n".join(parts)
+
+
+def build_convergence_prompt(
+    round_num: int,
+    round_output: dict[str, str],
+    intake_brief: IntakeBrief | None = None,
+) -> str:
+    """Build the prompt for the convergence check agent."""
+    perspectives = "\n\n".join(
+        f"### {name}\n{output}" for name, output in round_output.items()
+    )
+    parts = []
+    if intake_brief and intake_brief.summary:
+        parts.append(f"QUESTION CONTEXT:\n{intake_brief.summary}")
+    parts.append(f"ROUND {round_num} OUTPUT:\n{perspectives}")
+    parts.append(f"Should the deliberation continue to Round {round_num + 1}?")
+    return "\n\n".join(parts)
+
+
+def build_synthesis_prompt(
+    question: str,
+    all_analyst_output: str,
+    editor_output: dict[str, str],
+    samenvatter_output: str | None,
+    num_rounds: int,
+) -> str:
+    """Build the prompt for the synthesis agent."""
+    parts = [
+        f"ORIGINAL QUESTION:\n{question}",
+        f"NUMBER OF ROUNDS: {num_rounds}",
+        f"ANALYST OUTPUT:\n{all_analyst_output}",
+    ]
+    if editor_output:
+        editor_text = "\n\n".join(
+            f"### {name}\n{output}" for name, output in editor_output.items()
+        )
+        parts.append(f"EDITORIAL ANALYSIS:\n{editor_text}")
+    if samenvatter_output:
+        parts.append(f"SAMENVATTER:\n{samenvatter_output}")
+    return "\n\n".join(parts)

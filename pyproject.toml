@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "deliberators"
-version = "0.7.0"
+version = "0.7.1"
 description = "Multi-perspective AI deliberation team — Claude Code skill"
 license = "MIT"
 requires-python = ">=3.11"

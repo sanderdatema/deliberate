@@ -15,7 +15,11 @@ from deliberators.models import (
     IntakeBrief, Persona, Preset,
 )
 from deliberators.prompts import (
-    build_analyst_prompt, build_editor_prompt, build_persona_catalog,
+    build_analyst_prompt,
+    build_convergence_prompt,
+    build_editor_prompt,
+    build_synthesis_prompt,
+    build_team_selection_prompt,
     compile_analyst_output,
 )
 
@@ -488,21 +492,9 @@ class DeliberationEngine:
         code_context: str | None = None,
     ) -> tuple[list[str], list[str]]:
         """Select analysts and editors from the pool using a functional agent."""
-        catalog = build_persona_catalog(self.personas)
-
-        prompt_parts = []
-        if intake_brief and intake_brief.summary:
-            prompt_parts.append(f"QUESTION CONTEXT:\n{intake_brief.summary}")
-        prompt_parts.append(f"QUESTION:\n{question}")
-        if code_context:
-            prompt_parts.append(
-                "NOTE: The user is requesting a code review. "
-                "Prioritize code-focused personas (security, testing, architecture, etc.)."
-            )
-        prompt_parts.append(f"TEAM SIZE: Select exactly {preset.team_size} analysts and {preset.editor_count} editors.")
-        prompt_parts.append(f"AVAILABLE PERSONAS:\n{catalog}")
-
-        prompt = "\n\n".join(prompt_parts)
+        prompt = build_team_selection_prompt(
+            self.personas, question, preset, intake_brief, code_context,
+        )
 
         output = await self._subprocess_call(
             _TEAM_SELECTION_SYSTEM_PROMPT, prompt, self.config.model,
@@ -570,17 +562,7 @@ class DeliberationEngine:
         """Check whether another analyst round would add value."""
         await self._emit(DeliberationEvent(type="convergence_started", round_number=round_num))
 
-        perspectives = "\n\n".join(
-            f"### {name}\n{output}" for name, output in round_output.items()
-        )
-        prompt_parts = []
-        if intake_brief and intake_brief.summary:
-            prompt_parts.append(f"QUESTION CONTEXT:\n{intake_brief.summary}")
-        prompt_parts.append(f"ROUND {round_num} OUTPUT:\n{perspectives}")
-        prompt_parts.append(
-            f"Should the deliberation continue to Round {round_num + 1}?"
-        )
-        prompt = "\n\n".join(prompt_parts)
+        prompt = build_convergence_prompt(round_num, round_output, intake_brief)
 
         output = await self._subprocess_call(
             _CONVERGENCE_SYSTEM_PROMPT, prompt, self.config.model,
@@ -613,20 +595,9 @@ class DeliberationEngine:
         num_rounds: int,
     ) -> str:
         """Run synthesis agent to generate thematic report sections."""
-        parts = [f"ORIGINAL QUESTION:\n{question}"]
-        parts.append(f"NUMBER OF ROUNDS: {num_rounds}")
-        parts.append(f"ANALYST OUTPUT:\n{all_analyst_output}")
-
-        if editor_output:
-            editor_text = "\n\n".join(
-                f"### {name}\n{output}" for name, output in editor_output.items()
-            )
-            parts.append(f"EDITORIAL ANALYSIS:\n{editor_text}")
-
-        if samenvatter_output:
-            parts.append(f"SAMENVATTER:\n{samenvatter_output}")
-
-        prompt = "\n\n".join(parts)
+        prompt = build_synthesis_prompt(
+            question, all_analyst_output, editor_output, samenvatter_output, num_rounds,
+        )
         output = await self._subprocess_call(
             _SYNTHESIS_SYSTEM_PROMPT, prompt, self.config.model,
         )

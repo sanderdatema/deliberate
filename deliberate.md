@@ -54,6 +54,7 @@ Deliberation orchestrator. Assembles the right team, facilitates structured mult
 | `/deliberate --files ...` | Code review with code-focused personas | `@tasks/deliberate.md` |
 | `/deliberate --history` | List past deliberations | `@tasks/deliberate.md` |
 | `/deliberate --followup ID` | Follow up on a prior deliberation | `@tasks/deliberate.md` |
+| `/deliberate-setting` | Manage user preferences (tone, style) | Inline (slash command) |
 
 </commands>
 

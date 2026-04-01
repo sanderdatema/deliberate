@@ -23,6 +23,10 @@ uv run pytest
 # Quick code review
 /deliberate --preset quick --files src/main.py "Security check"
 
+# Manage personal preferences (tone, style)
+/deliberate-setting                    # List preferences
+/deliberate-setting Niet paternalistisch  # Add preference
+/deliberate-setting --remove 1         # Remove preference
 ```
 
 ## Presets
@@ -86,7 +90,12 @@ tests/                  # Pytest validation suite
   test_web.py           # Web viewer tests
 .claude/commands/       # Claude Code slash commands
   deliberate.md         # Unified deliberation command (general + code review)
+  deliberate-setting.md # User preference management
 ```
+
+## User Preferences
+
+Preferences are stored in `~/.local/share/deliberators/preferences.json` and injected as HIGH PRIORITY constraints into every analyst and editor prompt. Managed via `/deliberate-setting`.
 
 ## Architecture
 

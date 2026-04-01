@@ -8,9 +8,12 @@ If you cannot invoke the Skill tool, tell the user: "De /deliberate skill kan ni
 
 Do NOT:
 - Generate philosophical questions and answers yourself
-- Pretend to be multiple personas
-- Create a "deliberation-like" response without the actual skill
-- Run this in the background — the report must be shown directly to the user
+- Pretend to be multiple personas in plain text
+- Invent persona names like "UX Designer" or "Product Manager" — the skill has a FIXED pool of 25 named personas (Socrates, Don Norman, Fowler, etc.) defined in references/personas.md
+- Run `uv run python -m deliberators` or any shell/Bash equivalent
+- Run this as a background agent — the report MUST appear directly in the conversation
+- Proceed without team approval — always use AskUserQuestion to show the team and wait for confirmation
+- Spawn ANY agent before reading references/personas.md — this is the #1 failure mode
 
 ## Context Gathering (BEFORE invoking the skill)
 
